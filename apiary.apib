@@ -1,1 +1,760 @@
-ECHO is on.
+FORMAT: 1A
+HOST: https://127.0.0.1/
+
+![](https://www.soliteapay.com/wp-content/uploads/2020/03/soliteapay-logo.svg)
+
+# Solitea Pay - Payment Protocol
+
+The purpose of this document is to provide the POS (ECR) with a single API to communicate with external POI devices. 
+We will use the Nexo standard as the API. This document will describe the Nexo messages that will be used in our solution. 
+We will not copy here the entire Nexo standard spec. For further information you should refer to and learn [the official Nexo document](https://www.nexo-standards.org/standards/nexo-retailer-protocol). 
+
+This document was created using [apairy.io](https://apairy.io), you can request the direct access to Apiary on email martin.micek@smart-software.cz.
+
+**Payment Protocol Version: 1** (based on Nexo protocol v3.1)
+
+**STPAY version: 1.4.40**
+
+#### Changes
+| Date       | Author |Version    | Description|
+|------------|:-------|:----------|:--------------|
+| 11.05.2020 | PO     | v1.3.0    | HTTPS implementation, POIID verification in requests |
+| 19.05.2020 | PO     | v1.3.2    | Implicit authentication for certified POSes, new request to get the list of supported POIIDs |
+| 18.06.2020 | PO     | v1.3.7    | Added request result codes |
+| 21.07.2020 | PO     | v1.3.10   | Added flag ECRPrint to ProprietaryTags in response to indicate whether the POS should print the receipt |
+| 31.07.2020 | PO     | v1.4.0-RC1| Receipt data in response, if flag ECRPrint is set to true; mandatory authorization in the Intent communication |
+| 17.08.2020 | PO     | v1.4.0-RC2| Added information about mockup build |
+| 22.09.2020 | MM     | v1.4.0-RC3| Extension of POI Terminal list - specification for more terminals |
+| 27.10.2020 | PO     | v1.4.4 0  | Added variable symbol to sale request and response |
+
+## Overview
+
+### Glossary
+
+
+
+| Term   |      Description      |
+|----------|:--------------|
+| POS | Point of Sale. This is the cash register (ECR), AKA Sale system. This term may refer to the hardware or the software of the POS. |
+| POI | Point of Interaction. This is the payment terminal, AKA PED.  |
+| PED | PIN Entry Device. Same as POI. |
+| Nexo | The nexo Retailer protocol defines a set of interfaces between a card payment application and a retail point of sale system. |
+| JSON | JavaScript Object Notation. |
+| HTTP | HyperText Transfer Protocol. The Nexo messages will be sent using HTTP over TCP |
+| HTTPS | An extension of HTTP that is used for secure communication over a computer network |
+| POIID | A logical number that identifies the POI. |
+| TID | Terminal ID. This is a unique logical number of the payment terminal. TID will be used as the POIID. |
+| CNP | Card not present |
+
+### General Requirements and Limitations
+
+1. The POI must be able to listen for TCP/HTTP connections (i.e. the POI is the server). 
+1. The POS is the client. It creates the TCP/HTTP connection to the POI and sends the request to the POI using HTTP over TCP. The POS keeps the TCP/HTTP connection open until it gets the response.
+1. The request/response protocol between the POS and the POI will be based on HTTP over TCP.
+1. The HTTP body will be of Nexo format. This document will focus on the Nexo messages that are sent in the HTTP body. For more information about Nexo, please refer to Nexo official specification.
+1. For the communication of POS and POI on the same device, it is possible to communicate using Android Intents.
+1. The POI communicates with POS through a HTTPS protocol with self-signed certificate.
+This certificate is used just to enable an encrypted communication, not to verify POI's identity.
+
+### Default values
+
+Default port number for STPay is set to `7500` for production release and `6999` for mock release.
+Default basic authentication values are `user:pass`
+
+
+## HTTP Format
+
+### Mandatory HTTP Request Headers
+
+The following HTTP headers are mandatory:
+
+`Content-Type:application/json`
+`Content-Length: <the length of the JSON request string (the HTTP body)>`
+
+The POS (ECR) may send more headers, but they will be ignored by the POI. 
+
+### Authentication 
+
+In order to secure the NEXO calls, there is the HTTP Basic Authentication for each request. 
+Basic Authentication is a method for an HTTP user agent to provide a username and password when making a request.
+This method request contains a header field in the form 
+`Authorization: Basic <credentials>`, where credentials is the base64 encoding 
+of username and password joined by a single colon `:` . 
+For more information visit https://en.wikipedia.org/wiki/Basic_access_authentication.
+
+The certified Point Of Sale systems such as Dotykacka, Markeeta, ProfiUctenka and SmartPOS can use 
+the hardcoded username and password, these have been assigned during the certification process.
+
+### First request
+
+If the POS runs on the same device as POI, it is recommended to check if the Nexo server is running.
+If the server is not running, you can start it programmatically using an Intent.
+
+Request intent must target the launch intent for STPAY package (`com.stpos.a8pos`).
+```
+        PackageManager pm = activity.getPackageManager();
+        
+        // throws an Exception if STPAY is not installed
+        pm.getPackageInfo("com.stpos.a8pos", PackageManager.GET_ACTIVITIES);
+        Intent intent = pm.getLaunchIntentForPackage("com.stpos.a8pos");
+        if (intent != null) {
+            intent.setFlags(0);
+            intent.putExtra("START_NEXO_SERVER", true);
+            activity.startActivityForResult(intent, REQUEST_CODE);
+        }
+```
+After STPAY starts the server, it will return back to the Activity, which sent the Intent.
+
+## Intent based communication
+
+If the POS (ECR) is running on the same device as POI,
+the POS can call POI’s activity and receive result after the request is complete without any HTTP communication whatsoever.
+
+First, the POS should check if the Payment Application is running.
+
+- If the Payment App isn’t running, the request intent should be the launch intent for it’s package (`com.stpos.a8pos`).
+- If the Payment App is running, the request intent should target it’s Main View (`com.stpos.a8pos.main.MainView`).
+
+The Intent should be send with flags `0`.
+
+### Request parameters
+
+The request data in NEXO format must be placed as String Extra under key `NEXO_REQUEST`.
+
+From version `1.4.0` are mandatory String extras `USERNAME` and `PASSWORD`, which will be checked when the request Intent arrives.
+These credentials are the same for both HTTP and Intent communication.
+
+
+### Response parameters
+
+After the request is completed, the activity finishes and the result will be delivered through the `onActivityResult()` method in your Activity.
+The NEXO response payload will be available under the `NEXO_RESPONSE` key.
+
+## Nexo message structure 
+
+Nexo Message Structure consists of 3 main components:
+1. *a message envelope* - `SaleToPOIRequest/SaleToPOIResponse`, depends if request or response
+2. *a message header* - contains request metadata, consists of 7 elements
+3. *a message body* - holds different content for each MessageType and MessageCategory 
+
+### Request structure
+
+```
+ {
+    "SaleToPOIRequest": {
+        "MessageHeader": {
+           ...header data...
+        }
+        ...body...
+    }
+}
+```
+
+POIID value in MessageHeader will be checked by the POI to identify the request recipient.
+If the POIID in the message header is not identical to the POIID as it is defined in the POI,
+then the POI will not accept the request and it will return an error.
+In the response, the POI will put its POIID in this tag (even if the POS sent the wrong POIID).
+
+
+### Response structure
+
+```
+ {
+    "ResultCode": 0,
+    "SaleToPOIResponse": {
+        "MessageHeader": {
+           ...header data...
+        }
+        ...body...
+    }
+}
+```
+
+Each response object contains a result code in a `ResultCode` field to identify the request result.
+
+
+#### Result code list
+
+| Name       | Code      | Description   |
+|------------|:----------|:--------------|
+| UNDEFINED | -1 | Unclassified result. |
+| OK | 0 | Success. |
+| UNAUTHORIZED | 100 | The authorization failed. Check your credentials. |
+| INVALID_CONTENT_TYPE | 101 | Request content-type has to be 'application/json'. |
+| INVALID_JSON | 102 | The request JSON is not valid. |
+| EMPTY_BODY | 103 | The request is empty. |
+| UNKNOWN_REQUEST | 104 | The request is not valid or this request method is not implemented yet. |
+| MANDATORY_DATA_MISSING | 105 | The request is missing required data. |
+| ANOTHER_REQUEST_BEING_PROCESSED | 106 | The terminal is processing another transaction. Retry the request later. |
+| HTTP_METHOD_NOT_ALLOWED | 107 | This HTTP method is not allowed. |
+| REQUEST_TYPE_NOT_ALLOWED | 108 | The request type is not allowed on this terminal. |
+| WRONG_TID | 109 | Terminal ID (TID, POIID) in the request doesn't correspond with the TID of this payment terminal. |
+| CURRENCY_NOT_ALLOWED | 110 | Payment terminal does not allow to make transactions in this currency. |
+| TIMEOUT | 200 | Request timeout. |
+| NOT_FOUND | 201 | Transaction with provided parameters was not found. |
+| NO_REVERSIBLE_TRANSACTION_FOUND | 202 | Cannot reverse the transaction. |
+| TRANSACTION_IS_NOT_REVERSIBLE | 203 | Cannot reverse the transaction. |
+| CANCELED_BY_USER | 204 | The transaction was canceled by user. |
+| CARD_READ_ERROR | 205 | The provided card could not be read. |
+| ABORTED | 206 | The request was aborted externally. |
+| CARD_READ_TIMEOUT | 207 | The card was not read in time. |
+| HOST_REFUSED_GENERIC | 300 | Transaction was refused. |
+| WRONG_PIN | 301 | Transaction was refused because the the customer PIN was incorrect. |
+| EMPTY_HOST_RESPONSE | 302 | Payment authorization switch returned an empty answer. |
+| TECHNICAL_REVERSAL | 303 | The request was sent to payment switch and the result could not be read. The transaction was successfully canceled afterwards. |
+| PAYMENT_SWITCH_COMMUNICATION_ERROR | 304 | The request was sent to payment switch and the result could not be read. The transaction was not canceled due to another error. If you receive this result code, please call the support to verify the transaction result. |
+
+
+#### Concurrency
+
+Only one request can be processed at the time.
+If there are more concurrent requests, only the first one will be processed and the other ones will return busy response (result code `106`).
+
+The same scenario is applied if the terminal processes a transaction locally.
+
+#### Solitea Pay receipt format
+
+If ECRPrint in Proprietary tags is set to `true`, from version `1.4.0` will be in the `PaymentResponse` a `PaymentReceipt` object,
+which contains the exact data to print on the ECR.
+
+`outputContent.OutputFormat` determines the data format.
+Currently supported format is `SoliteaPay`.
+The SoliteaPay data tag contains an array of receipt lines.
+Each line is a JSON object with predefined format.
+
+##### Line format types
+
+- *text* - The basic text to print. It is in the `text` property. The format is defined in `format` object, which consists of three format items:
+    - size (int): Text size. Default value is `18`. Bigger texts, like amount value, should have their value around `26`.
+    - bold (boolean): `true` if the text should be printed in bold. `false` otherwise.
+    - align (string): One of the following values: `start`, `center`, `end`.
+- *twocolumns* - The text should be formatted into two colums, defined in properties `left` and `right`. Each column is text type with it's own format.
+- *division* - A horizontal division line for separating content on the receipt.
+
+The sample output is in the Sale response.
+
+
+### Mockup
+
+Mockup version of STPAY app is shown as `STPAY MOCK` in the laucher.
+
+This version of the app doesn't communicate with any server, thus the implementator can use production cards to test the transactions with.
+
+Because the card data are not being verified online, transaction result is being set based on the requested amount.
+
+If the reqested amount is:
+
+- *greater or equal to 1000*: transaction is declined,
+- *greater or equal to 555 and less than 556*: result is `PLACE CALL`,
+- *greater or equal to 666 and less than 667*: result is `TECHNICAL REVERSAL FAIL`,
+- *greater or equal to 110 and less than 121*: result contains additional food card data.
+
+
+
+
+## Supported Transaction Types [/]
+
+### Sale [POST]
+
+A request combining the Auth and Completion transactions that instructs the Gateway to perform both actions,
+one after the other:
+query the bank for authorization and, upon approval, immediately complete the transaction. 
+In Nexo, the Sale is done by using `"PaymentType": "Normal"`
+
+`ProprietaryTags` in `PaymentTransaction` is optional.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Length: <calculated>
+
+    + Body
+    
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Payment",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "123456"
+                    },
+                    "PaymentRequest": {
+                        "PaymentData": {
+                            "PaymentType": "Normal"
+                        },
+                        "PaymentTransaction": {
+                            "AmountsReq": {
+                                "Currency": "CZK",
+                                "RequestedAmount": 10
+                            },
+                            "ProprietaryTags": {
+                                "VariableSymbol": "123123"
+                            }
+                        },
+                        "SaleData": {
+                            "SaleTransactionID": {
+                                "TimeStamp": "2020-04-19T14:20:00+0100",
+                                "TransactionID": "12345678-abcd-abcd-abcd-123456789abc"
+                            }
+                        }
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+
+            
+
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Payment",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "123456"
+                    },
+                    "PaymentResponse": {
+                        "PaymentData": {
+                            "PaymentType": "Normal"
+                        },
+                        "PaymentReceipt": {
+                            "documentQualifier": "saleReceipt",
+                            "integratedPrintFlag": true,
+                            "outputContent": {
+                                "OutputFormat": "SoliteaPay",
+                                "SoliteaPayData": [
+                                    {
+                                        "format": {
+                                            "align": "start",
+                                            "bold": false,
+                                            "size": 18
+                                        },
+                                        "text": "Basic text",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "type": "division"
+                                    },
+                                    {
+                                        "left": {
+                                            "format": {
+                                                "align": "start",
+                                                "bold": false,
+                                                "size": 18
+                                            },
+                                            "text": "Left column text",
+                                            "type": "text"
+                                        },
+                                        "right": {
+                                            "format": {
+                                                "align": "end",
+                                                "bold": false,
+                                                "size": 18
+                                            },
+                                            "text": "Right column text",
+                                            "type": "text"
+                                        },
+                                        "type": "twocolumns"
+                                    }
+                                ]
+                            }
+                        }
+                        "PaymentResult": {
+                            "AmountsResp": {
+                                "AuthorizedAmount": 10.0,
+                                "Currency": "CZK"
+                            },
+                            "PaymentInstrumentData": {
+                                "CardData": {
+                                    "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                }
+                            },
+                            "ProprietaryTags": {
+                                "Aid": "A0000000041010",
+                                "ApplicationName": "DEBIT MASTERCARD",
+                                "AuthorizationCode": "123456",
+                                "Brand": "MASTER",
+                                "CardExpiration": "20220731",
+                                "CardPresentationMethod": "CLESS",
+                                "ECRPrint": true,
+                                "ReceiptDate": "2020-04-24T14:20:11+02:00",
+                                "SequenceNumber": "1234567890",
+                                "SignatureRequired": false,
+                                "TerminalId": "POITerm1  ",
+                                "VariableSymbol": "123123",
+                                "VerifiedByDevice": false
+                            }
+                        },
+                        "POIData": {
+                            "POITransactionID": {
+                                "TimeStamp": "2020-04-24T14:20:11+02:00",
+                                "TransactionID": "79fe58f3-511f-4964-9e63-91609ae02273"
+                            }
+                        },
+                        "Response": {
+                            "Result": "Success"
+                        }
+                    }
+                }
+            }
+
+
+### Reversal [POST]
+
+A request initiated by the merchant, Technical Support, or Risk department, instructing the Gateway to cancel (delete) the last transaction before end of day.
+The reversed transaction can either be a Completion, Sale or Refund. 
+The reversal transaction enables you to cancel an erroneous or problematic transaction before it is completed. 
+
+In Nexo, it is done by using `"MessageCategory": "Reversal"` in the message header. 
+
+Original transaction will be identified by data sent in `OriginalPOITransaction.POITransactionID` field.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Length: <calculated>
+            
+    + Body
+    
+            {
+                "SaleToPOIRequest" : {
+                    "MessageHeader" : {
+                          "MessageCategory" : "Reversal",
+                          "MessageClass" : "Service",
+                          "MessageType" : "Request",
+                          "POIID" : "POITerm1",
+                          "ProtocolVersion" : "3.1",
+                          "SaleID" : "POS_ID_1234",
+                          "ServiceID" : "12345678"
+                    },
+                    "ReversalRequest" : {
+                        "OriginalPOITransaction" : {
+                            "POITransactionID": {
+                                "TimeStamp": "2020-04-24T14:20:11+02:00",
+                                "TransactionID": "79fe58f3-511f-4964-9e63-91609ae02273"
+                            }
+                        },
+                        "ReversalReason" : "MerchantCancel"
+                    }
+                }
+            }
+    
++ Response 200 (application/json)
+
+    + Headers
+    
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Reversal",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "12345678"
+                    },
+                    "ReversalResponse": {
+                        "POIData": {
+                            "POITransactionID": {
+                                "TimeStamp": "2020-04-24T14:30:45+02:00",
+                                "TransactionID": "766b894f-4512-40ec-8505-82e13c795b0d"
+                            }
+                        },
+                        "Response": {
+                            "Result": "Success"
+                        }
+                    }
+                }
+            }
+
+### Refund [POST]
+
+A request instructing the Gateway to refund a previously completed transaction to the consumer. 
+In Nexo, the refund is done by using `"PaymentType": "Refund"`
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Length: <calculated>
+            
+    + Body
+    
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Payment",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "123456789"
+                    },
+                    "PaymentRequest": {
+                        "PaymentData": {
+                            "PaymentType": "Refund"
+                        },
+                        "PaymentTransaction": {
+                            "AmountsReq": {
+                                "Currency": "CZK",
+                                "RequestedAmount": 10.00
+                            },
+                            "OriginalPOITransaction": {
+                                "POITransactionID": {
+                                    "TimeStamp": "2020-04-24T15:57:48+02:00",
+                                    "TransactionID": "bfb7fab0-e777-416f-9d87-ab4065da01cc"
+                                }
+                            }
+                        }, "SaleData": {
+                            "SaleTransactionID": {
+                                "TransactionID": "12345",
+                                "TimeStamp": "2020-04-24T15:59:00+0100"
+                            }
+                        }
+                    }
+                }
+            }
+    
++ Response 200 (application/json)
+
+    + Headers
+    
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Payment",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "123456789"
+                    },
+                    "PaymentResponse": {
+                        "PaymentData": {
+                            "PaymentType": "Refund"
+                        },
+                        "PaymentResult": {
+                            "AmountsResp": {
+                                "AuthorizedAmount": 10.0,
+                                "Currency": "CZK"
+                            },
+                            "PaymentInstrumentData": {
+                                "CardData": {
+                                    "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                }
+                            },
+                            "ProprietaryTags": {
+                                "Aid": "A0000000041010",
+                                "ApplicationName": "DEBIT MASTERCARD",
+                                "AuthorizationCode": "123456",
+                                "Brand": "MASTER",
+                                "CardExpiration": "20220731",
+                                "CardPresentationMethod": "CLESS",
+                                "ECRPrint": false,
+                                "ReceiptDate": "2020-04-24T15:59:24+02:00",
+                                "SequenceNumber": "1234567890",
+                                "SignatureRequired": false,
+                                "TerminalId": "POITerm1  ",
+                                "VerifiedByDevice": false
+                            }
+                        },
+                        "POIData": {
+                            "POITransactionID": {
+                                "TimeStamp": "2020-04-24T15:59:24+02:00",
+                                "TransactionID": "f21ba5ef-ed98-4aff-a184-08866707cfc0"
+                            }
+                        },
+                        "Response": {
+                            "Result": "Success"
+                        }
+                    }
+                }
+            }
+
+### Transaction Status Request [POST]
+
+The POS can recover the final status of a payment when the POS didn't receive the payment response from the POI.
+A TransactionStatusRequest is an error recovery mechanism.
+If the response of the payment request does not arrive within the predefined time limit,
+you can retrieve the final status of the transaction.
+Because the response didn't arrive, the POS cannot use the POI TransactionID because it doesn't know it.
+So the POS will use the `ServiceID` and `MessageCategory` from previously sent `MessageHeader`.
+
+POI will return a unique transaction from combination of `ServiceID`, `SaleID` and `MessageCategory` from `MessageReference` sent in the Body of the request.
+If the POI won't find exactly one transaction, an error will be returned.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Length: <calculated>
+    
+    + Body
+            
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "TransactionStatus",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567"
+                    },
+                    "TransactionStatusRequest": {
+                        "MessageReference": {
+                            "MessageCategory": "Payment",
+                            "ServiceID": "123456",
+                            "SaleID": "POS_ID_1234"
+                        }
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "TransactionStatus",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567"
+                    },
+                    "TransactionStatusResponse": {
+                        "RepeatedMessageResponse": {
+                            "MessageHeader": {
+                                "MessageCategory": "Payment",
+                                "MessageClass": "Service",
+                                "MessageType": "Response",
+                                "POIID": "POITerm1",
+                                "ProtocolVersion": "3.1",
+                                "SaleID": "POS_ID_1234",
+                                "ServiceID": "123456"
+                            },
+                            "RepeatedResponseMessageBody": {
+                                "PaymentResponse": {
+                                    "PaymentData": {
+                                        "PaymentType": "Normal"
+                                    },
+                                    "PaymentResult": {
+                                        "AmountsResp": {
+                                            "AuthorizedAmount": 10.0,
+                                            "Currency": "CZK"
+                                        },
+                                        "PaymentInstrumentData": {
+                                            "CardData": {
+                                                "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                            }
+                                        },
+                                        "ProprietaryTags": {
+                                            "Aid": "A0000000041010",
+                                            "ApplicationName": "DEBIT MASTERCARD",
+                                            "AuthorizationCode": "123456",
+                                            "Brand": "MASTER",
+                                            "CardExpiration": "20220731",
+                                            "CardPresentationMethod": "CLESS",
+                                            "ReceiptDate": "2020-04-24T14:20:10+02:00",
+                                            "SequenceNumber": "1234567890",
+                                            "SignatureRequired": false,
+                                            "TerminalId": "POITerm1  ",
+                                            "VerifiedByDevice": false
+                                        }
+                                    },
+                                    "POIData": {
+                                        "POITransactionID": {
+                                            "TimeStamp": "2020-04-24T14:20:10+02:00",
+                                            "TransactionID": "79fe58f3-511f-4964-9e63-91609ae02273"
+                                        }
+                                    },
+                                    "Response": {
+                                        "Result": "Success"
+                                    }
+                                }
+                            }
+                        },
+                        "Response": {
+                            "Result": "Success"
+                        }
+                    }
+                }
+            }
+
+## Protocol extensions [/poitermlist]
+
+### POI Terminal List [GET]
+
+A request to discover the available POIIDs on current terminal.
+It returns a POI Terminal list, which contains a list of available terminals on the device.
+The caller then uses this POIID in the `MessageHeader` object to identify the terminal,
+which is communicating with.
+
+The **first record** of POI Terminal list contains information about the proprietor of the physical device. 
+POS systems could use this record as a fallback in pairing procedure (e.g. when POIID can't be found by BusinessID and Currency).
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Basic dXNlcjpwYXNz
+            
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "POITerminalList": [
+                    {
+                        "POIID": "POITERM2",
+                        "BusinessId": "25599051",
+                        "MerchantName": "Solitea Pay s.r.o.",
+                        "Currency": "EUR"
+                    },
+                    {
+                        "POIID": "POITERM1",
+                        "BusinessId": "25292498",
+                        "MerchantName": "Smart software s.r.o.",
+                        "Currency": "CZK"
+                    }
+                ]
+            }
