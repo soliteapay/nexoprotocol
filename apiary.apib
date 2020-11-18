@@ -26,6 +26,7 @@ This document was created using [apairy.io](https://apairy.io), you can request 
 | 17.08.2020 | PO     | v1.4.0-RC2| Added information about mockup build |
 | 22.09.2020 | MM     | v1.4.0-RC3| Extension of POI Terminal list - specification for more terminals |
 | 27.10.2020 | PO     | v1.4.4 0  | Added variable symbol to sale request and response |
+| 18.11.2020 | PO     | v1.4.60   | Added enumerated values to receipt images |
 
 ## Overview
 
@@ -230,6 +231,10 @@ Each line is a JSON object with predefined format.
     - align (string): One of the following values: `start`, `center`, `end`.
 - *twocolumns* - The text should be formatted into two colums, defined in properties `left` and `right`. Each column is text type with it's own format.
 - *division* - A horizontal division line for separating content on the receipt.
+- *image* - An image. If the image is from enumerated list, it will contain it's enumerated value, so the POS doesn't have to parse the binary data every time. The fields in the image line are:
+    - data (string): BASE64 encoded bmp data. Flags for the encoding are NO_WRAP and NO_PADDING.
+    - enumValue (string). Supported values are:
+         - CLESS_LOGO: Logo for contactless transaction
 
 The sample output is in the Sale response.
 
