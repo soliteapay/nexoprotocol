@@ -75,7 +75,19 @@ The POS (ECR) may send more headers, but they will be ignored by the POI.
 
 ### Authentication 
 
-In order to secure the NEXO calls, there is the HTTP Basic Authentication for each request. 
+In order to secure the NEXO calls, every request needs to be authorized.
+
+#### Authentication for versions 2.0 and newer
+
+Requests are authorized with a bearer token, which can be obtained through a POS certification process.
+Every request must contain header field with the token:
+`Authorization: Bearer <token>`
+
+Each token has a limited validity and needs to be periodically renewed.
+For development purposes, you can apply for a token, which will work on mockup devices.
+
+#### Authentication for versions 1.2 - 1.5
+Requests are authorized with HTTP Basic Authentication.
 Basic Authentication is a method for an HTTP user agent to provide a username and password when making a request.
 This method request contains a header field in the form 
 `Authorization: Basic <credentials>`, where credentials is the base64 encoding 
