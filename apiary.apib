@@ -27,6 +27,7 @@ This document was created using [apairy.io](https://apairy.io), you can request 
 | 22.09.2020 | MM     | v1.4.0-RC3| Extension of POI Terminal list - specification for more terminals |
 | 27.10.2020 | PO     | v1.4.4 0  | Added variable symbol to sale request and response |
 | 18.11.2020 | PO     | v1.4.60   | Added enumerated values to receipt images |
+| 01.12.2020 | PO     | v1.5.40   | Added reconciliation support |
 
 ## Overview
 
@@ -731,6 +732,106 @@ If the POI won't find exactly one transaction, an error will be returned.
                     }
                 }
             }
+
+### Reconciliation Request [POST]
+
+The reconciliation request is used to close the sale interval on the POI (Z Report) or calculate the subtotals (X Report).
+
+The Reconciliation request message body is `ReconciliationRequest` and contains the ReconciliationType field, which determines the report type:
+ - `SaleReconciliation`: Reconciliation of the current reconciliation period, without any closing nor synchronisation with Acquirer reconciliations. 
+ - `AcquirerSynchronisation`: Reconciliation and closure of the current period, with
+synchronisation of reconciliations between the POI and the Acquirer.
+
+The response contains data of transaction debit and credit counters and the terminal currency.
+
+If the terminal has enabled ECR printing, the reponse contains receipt data in Solitea Pay format.
+
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Basic dXNlcjpwYXNz
+            Content-Length: <calculated>
+    
+    + Body
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Reconciliation",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567"
+                    },
+                    "ReconciliationRequest": {
+                        "ReconciliationType": "SaleReconciliation"
+                    }
+                }
+            }
+
+
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+            {
+    "SaleToPOIResponse": {
+        "MessageHeader": {
+            "MessageCategory": "Reconciliation",
+            "MessageClass": "Service",
+            "MessageType": "Response",
+            "POIID": "POITerm1",
+            "ProtocolVersion": "3.1",
+            "SaleID": "POS_ID_1234",
+            "ServiceID": "1234567"
+        },
+        "ReconciliationResponse": {
+            "POIReconciliationID": 1,
+            "ProprietaryTags": {
+                "ECRPrint": true,
+                "ReceiptData": [
+                    {
+                        "format": {
+                            "align": "start",
+                            "bold": false,
+                            "size": 24
+                        },
+                        "text": "Receipt data in Solitea Pay format",
+                        "type": "text"
+                    }
+                ]
+            },
+            "ReconciliationType": "SaleReconciliation",
+            "TransactionTotals": [
+                {
+                    "PaymentCurrency": "CZK",
+                    "PaymentTotals": [
+                        {
+                            "TransactionAmount": 123.25,
+                            "TransactionCount": 2,
+                            "TransactionType": "Credit"
+                        },
+                        {
+                            "TransactionAmount": 2535.98,
+                            "TransactionCount": 10,
+                            "TransactionType": "Debit"
+                        }
+                    ]
+                }
+            ],
+            "Response": {
+                "Result": "Success"
+            }
+        }
+    },
+    "ResultCode": 0
+}
 
 ## Protocol extensions [/poitermlist]
 
