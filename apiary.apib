@@ -28,6 +28,7 @@ This document was created using [apairy.io](https://apairy.io), you can request 
 | 27.10.2020 | PO     | v1.4.4 0  | Added variable symbol to sale request and response |
 | 18.11.2020 | PO     | v1.4.60   | Added enumerated values to receipt images |
 | 01.12.2020 | PO     | v1.5.40   | Added reconciliation support |
+| 09.12.2020 | PO     | v1.5.50   | Added ResultCode for TransactionStatus reponse body |
 
 ## Overview
 
@@ -625,6 +626,8 @@ So the POS will use the `ServiceID` and `MessageCategory` from previously sent `
 POI will return a unique transaction from combination of `ServiceID`, `SaleID` and `MessageCategory` from `MessageReference` sent in the Body of the request.
 If the POI won't find exactly one transaction, an error will be returned.
 
+Result code of the previous transaction is located in `TransactionStatusResponse`. 
+
 + Request (application/json)
 
     + Headers
@@ -675,6 +678,7 @@ If the POI won't find exactly one transaction, an error will be returned.
                         "ServiceID": "1234567"
                     },
                     "TransactionStatusResponse": {
+                        "ResultCode": 0,
                         "RepeatedMessageResponse": {
                             "MessageHeader": {
                                 "MessageCategory": "Payment",
@@ -755,6 +759,7 @@ If the terminal has enabled ECR printing, the reponse contains receipt data in S
             Content-Length: <calculated>
     
     + Body
+    
             {
                 "SaleToPOIRequest": {
                     "MessageHeader": {
@@ -781,57 +786,57 @@ If the terminal has enabled ECR printing, the reponse contains receipt data in S
     + Body
     
             {
-    "SaleToPOIResponse": {
-        "MessageHeader": {
-            "MessageCategory": "Reconciliation",
-            "MessageClass": "Service",
-            "MessageType": "Response",
-            "POIID": "POITerm1",
-            "ProtocolVersion": "3.1",
-            "SaleID": "POS_ID_1234",
-            "ServiceID": "1234567"
-        },
-        "ReconciliationResponse": {
-            "POIReconciliationID": 1,
-            "ProprietaryTags": {
-                "ECRPrint": true,
-                "ReceiptData": [
-                    {
-                        "format": {
-                            "align": "start",
-                            "bold": false,
-                            "size": 24
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Reconciliation",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567"
+                    },
+                    "ReconciliationResponse": {
+                        "POIReconciliationID": 1,
+                        "ProprietaryTags": {
+                            "ECRPrint": true,
+                            "ReceiptData": [
+                                {
+                                    "format": {
+                                        "align": "start",
+                                        "bold": false,
+                                        "size": 24
+                                    },
+                                    "text": "Receipt data in Solitea Pay format",
+                                    "type": "text"
+                                }
+                            ]
                         },
-                        "text": "Receipt data in Solitea Pay format",
-                        "type": "text"
-                    }
-                ]
-            },
-            "ReconciliationType": "SaleReconciliation",
-            "TransactionTotals": [
-                {
-                    "PaymentCurrency": "CZK",
-                    "PaymentTotals": [
-                        {
-                            "TransactionAmount": 123.25,
-                            "TransactionCount": 2,
-                            "TransactionType": "Credit"
-                        },
-                        {
-                            "TransactionAmount": 2535.98,
-                            "TransactionCount": 10,
-                            "TransactionType": "Debit"
+                        "ReconciliationType": "SaleReconciliation",
+                        "TransactionTotals": [
+                            {
+                                "PaymentCurrency": "CZK",
+                                "PaymentTotals": [
+                                    {
+                                        "TransactionAmount": 123.25,
+                                        "TransactionCount": 2,
+                                        "TransactionType": "Credit"
+                                    },
+                                    {
+                                        "TransactionAmount": 2535.98,
+                                        "TransactionCount": 10,
+                                        "TransactionType": "Debit"
+                                    }
+                                ]
+                            }
+                        ],
+                        "Response": {
+                            "Result": "Success"
                         }
-                    ]
-                }
-            ],
-            "Response": {
-                "Result": "Success"
+                    }
+                },
+                "ResultCode": 0
             }
-        }
-    },
-    "ResultCode": 0
-}
 
 ## Protocol extensions [/poitermlist]
 
