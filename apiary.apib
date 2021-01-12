@@ -27,6 +27,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 18.11.2020 | PO     | v1.4.60   | Added enumerated values to receipt images |
 | 01.12.2020 | PO     | v1.5.40   | Added reconciliation support |
 | 09.12.2020 | PO     | v1.5.50   | Added ResultCode for TransactionStatus reponse body |
+| 12.01.2021 | PO     | v2.0.0    | Added support for tips |
 
 ## Overview
 
@@ -279,6 +280,14 @@ In Nexo, the Sale is done by using `"PaymentType": "Normal"`
 
 `ProprietaryTags` in `PaymentTransaction` is optional.
 
+The POS can set the tipping options by setting the value of `AskForTip` in `ProprietaryTags`.
+If the value is missing, the customer will be asked for a tip based on the POI configuration.
+If the user was asked for a tip, the POI performs the payment transaction for the RequestedAmount increased by the value of
+tip amount, and the `TipAmount` will be present in the response if the whole payment is authorised as following:
+
+`AmountsResp.AuthorizedAmount = AmountsReq.RequestedAmount + AmountsResp.TipAmount`
+
+
 + Request (application/json)
 
     + Headers
@@ -309,6 +318,7 @@ In Nexo, the Sale is done by using `"PaymentType": "Normal"`
                                 "RequestedAmount": 10
                             },
                             "ProprietaryTags": {
+                                "AskForTip": true,
                                 "VariableSymbol": "123123"
                             }
                         },
@@ -390,7 +400,8 @@ In Nexo, the Sale is done by using `"PaymentType": "Normal"`
                         }
                         "PaymentResult": {
                             "AmountsResp": {
-                                "AuthorizedAmount": 10.0,
+                                "AuthorizedAmount": 11.0,
+                                "TipAmount": 1.0,
                                 "Currency": "CZK"
                             },
                             "PaymentInstrumentData": {
