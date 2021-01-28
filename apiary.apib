@@ -11,7 +11,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 
 **Payment Protocol Version: 1** (based on Nexo protocol v3.1)
 
-**STPAY version: 2.0.0**
+**STPAY version: 2.0.1**
 
 #### Changes
 | Date       | Author |Version    | Description|
@@ -28,6 +28,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 01.12.2020 | PO     | v1.5.40   | Added reconciliation support |
 | 09.12.2020 | PO     | v1.5.50   | Added ResultCode for TransactionStatus reponse body |
 | 12.01.2021 | PO     | v2.0.0    | Added support for tips |
+| 12.01.2021 | PO     | v2.0.1    | Added ResultCode for failed signature verification; retrospectively added ResultCode for Place call. |
 
 ## Overview
 
@@ -216,6 +217,8 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | EMPTY_HOST_RESPONSE | 302 | Payment authorization switch returned an empty answer. |
 | TECHNICAL_REVERSAL | 303 | The request was sent to payment switch and the result could not be read. The transaction was successfully canceled afterwards. |
 | PAYMENT_SWITCH_COMMUNICATION_ERROR | 304 | The request was sent to payment switch and the result could not be read. The transaction was not canceled due to another error. If you receive this result code, please call the support to verify the transaction result. |
+| PLACE_CALL | 305 | The transaction requires a phone authorization. The staff member must call the authorization centre to complete the transaction. |
+| SIGNATURE_NOT_VERIFIED | 306 | The transaction was successful and required a signature verification, which failed. The transaction was reversed afterwards. |
 
 
 #### Concurrency
