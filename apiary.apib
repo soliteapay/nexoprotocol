@@ -1,13 +1,13 @@
 FORMAT: 1A
 HOST: https://127.0.0.1/
-
+maileto
 ![](https://www.soliteapay.com/wp-content/uploads/2020/09/Soliteapay-logo.svg)
 
 # Solitea Pay - Payment Protocol
 
-The purpose of this document is to provide the POS (ECR) with a single API to communicate with external POI devices. 
-We will use the Nexo standard as the API. This document will describe the Nexo messages that will be used in our solution. 
-We will not copy here the entire Nexo standard spec. For further information you should refer to and learn [the official Nexo document](https://www.nexo-standards.org/standards/nexo-retailer-protocol). 
+The purpose of this document is to provide the POS (ECR) with a single API to communicate with external POI devices.
+We will use the Nexo standard as the API. This document will describe the Nexo messages that will be used in our solution.
+We will not copy here the entire Nexo standard spec. For further information you could refer to and learn [the official Nexo document](https://www.nexo-standards.org/standards/nexo-retailer-protocol).
 
 **Payment Protocol Version: 1** (based on Nexo protocol v3.1)
 
@@ -29,6 +29,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 09.12.2020 | PO     | v1.5.50   | Added ResultCode for TransactionStatus reponse body |
 | 12.01.2021 | PO     | v2.0.0    | Added support for tips |
 | 12.01.2021 | PO     | v2.0.1    | Added ResultCode for failed signature verification; retrospectively added ResultCode for Place call. |
+| 17.02.2021 | MM     | v2.0.20   | Changed to bearer authorization in request examples
 
 ## Overview
 
@@ -61,8 +62,9 @@ This certificate is used just to enable an encrypted communication, not to verif
 ### Default values
 
 Default port number for STPay is set to `7500` for production release and `6999` for mock release.
-Default basic authentication values are `user:pass`
-
+Default basic authentication values are `user:pass` (only for version 1.2-1.5).
+For versions 2.0.x and above please use bearer authorization. 
+Please contact integrace@soliteapay.com for mock device and token.
 
 ## HTTP Format
 
@@ -295,7 +297,7 @@ tip amount, and the `TipAmount` will be present in the response if the whole pay
 
     + Headers
 
-            Authorization: Basic dXNlcjpwYXNz
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
             Content-Length: <calculated>
 
     + Body
@@ -456,7 +458,7 @@ Original transaction will be identified by data sent in `OriginalPOITransaction.
 
     + Headers
     
-            Authorization: Basic dXNlcjpwYXNz
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
             Content-Length: <calculated>
             
     + Body
@@ -525,7 +527,7 @@ In Nexo, the refund is done by using `"PaymentType": "Refund"`
 
     + Headers
     
-            Authorization: Basic dXNlcjpwYXNz
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
             Content-Length: <calculated>
             
     + Body
@@ -644,7 +646,7 @@ Result code of the previous transaction is located in `TransactionStatusResponse
 
     + Headers
     
-            Authorization: Basic dXNlcjpwYXNz
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
             Content-Length: <calculated>
     
     + Body
@@ -767,7 +769,7 @@ If the terminal has enabled ECR printing, the reponse contains receipt data in S
 
     + Headers
     
-            Authorization: Basic dXNlcjpwYXNz
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
             Content-Length: <calculated>
     
     + Body
@@ -866,7 +868,7 @@ POS systems could use this record as a fallback in pairing procedure (e.g. when 
 
     + Headers
     
-            Authorization: Basic dXNlcjpwYXNz
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
             
 + Response 200 (application/json)
 
