@@ -756,9 +756,10 @@ Result code of the previous transaction is located in `TransactionStatusResponse
 The reconciliation request is used to close the sale interval on the POI (Z Report) or calculate the subtotals (X Report).
 
 The Reconciliation request message body is `ReconciliationRequest` and contains the ReconciliationType field, which determines the report type:
- - `SaleReconciliation`: Reconciliation of the current reconciliation period, without any closing nor synchronisation with Acquirer reconciliations. (X report)
- - `AcquirerSynchronisation`: Reconciliation and closure of the current period, with
-synchronisation of reconciliations between the POI and the Acquirer. (Z report)
+
+- `SaleReconciliation`: Reconciliation of the current reconciliation period, without any closing nor synchronisation with Acquirer reconciliations. (X report)
+
+- `AcquirerSynchronisation`: Reconciliation and closure of the current period, with synchronisation of reconciliations between the POI and the Acquirer. (Z report)
 
 The response contains data of transaction debit and credit counters and the terminal currency.
 
