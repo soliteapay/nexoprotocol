@@ -33,6 +33,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 12.01.2021 | PO     | v2.0.1    | Added ResultCode for failed signature verification; retrospectively added ResultCode for Place call. |
 | 17.02.2021 | MM     | v2.0.20   | Changed to bearer authorization in request examples |
 | 01.03.2021 | MM     | v2.0.30   | Example requests for Postman |
+| 02.03.2021 | MM     | v2.0.40   | Variable symbol request |
 
 ## Overview
 
@@ -296,6 +297,10 @@ tip amount, and the `TipAmount` will be present in the response if the whole pay
 `AmountsResp.AuthorizedAmount = AmountsReq.RequestedAmount + AmountsResp.TipAmount`
 
 
+The POS can also request the variable symbol prompt by setting the value of `AskForVariableSymbol` in `ProprietaryTags` to `true`.
+The `VariableSymbol` value overrides the `AskForVariableSymbol` - if the `VariableSymbol` is present, the POI will use the provided VS and won't ask the user for it.
+
+
 + Request (application/json)
 
     + Headers
@@ -327,7 +332,8 @@ tip amount, and the `TipAmount` will be present in the response if the whole pay
                             },
                             "ProprietaryTags": {
                                 "AskForTip": true,
-                                "VariableSymbol": "123123"
+                                "VariableSymbol": "123123",
+                                "AskForVariableSymbol": true
                             }
                         },
                         "SaleData": {
