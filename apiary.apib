@@ -1,15 +1,13 @@
 FORMAT: 1A
 HOST: https://127.0.0.1/
 
-![](https://www.soliteapay.com/wp-content/uploads/2020/09/Soliteapay-logo.svg)
-
-# Solitea Pay - Payment Protocol
+# Dotypay - Payment Protocol
 
 The purpose of this document is to provide the POS (ECR) with a single API to communicate with external POI devices.
 We will use the Nexo standard as the API. This document will describe the Nexo messages that will be used in our solution.
 We will not copy here the entire Nexo standard spec. For further information you could refer to and learn [the official Nexo document](https://www.nexo-standards.org/standards/nexo-retailer-protocol).
 
-**NEW!** We prepared example requests for the [Postman application](https://www.postman.com/), you can download them [here](https://soliteapay.com/pro-developery/assets/StPayNexoCollection.zip).
+**NEW!** We prepared example requests for the [Postman application](https://www.postman.com/), you can download them [here](https://dotypay.com/pro-developery/assets/StPayNexoCollection.zip).
 
 **Payment Protocol Version: 1** (based on Nexo protocol v3.1)
 
@@ -68,7 +66,7 @@ This certificate is used just to enable an encrypted communication, not to verif
 Default port number for STPay is set to `7500` for production release and `6999` for mock release.
 Default basic authentication values are `user:pass` (only for version 1.2-1.5).
 For versions 2.0.x and above please use bearer authorization. 
-Please contact integrace@soliteapay.com for mock device and token.
+Please contact integrace@dotypay.com for mock device and token.
 
 ## HTTP Format
 
@@ -234,14 +232,14 @@ If there are more concurrent requests, only the first one will be processed and 
 
 The same scenario is applied if the terminal processes a transaction locally.
 
-#### Solitea Pay receipt format
+#### Dotypay receipt format
 
 If ECRPrint in Proprietary tags is set to `true`, from version `1.4.0` will be in the `PaymentResponse` a `PaymentReceipt` object,
 which contains the exact data to print on the ECR.
 
 `outputContent.OutputFormat` determines the data format.
-Currently supported format is `SoliteaPay`.
-The SoliteaPay data tag contains an array of receipt lines.
+Currently supported format is `Dotypay` (from version 2.1.0).
+The DotypayData tag contains an array of receipt lines.
 Each line is a JSON object with predefined format.
 
 ##### Line format types
@@ -374,8 +372,8 @@ The `VariableSymbol` value overrides the `AskForVariableSymbol` - if the `Variab
                             "documentQualifier": "saleReceipt",
                             "integratedPrintFlag": true,
                             "outputContent": {
-                                "OutputFormat": "SoliteaPay",
-                                "SoliteaPayData": [
+                                "OutputFormat": "Dotypay",
+                                "DotypayData": [
                                     {
                                         "format": {
                                             "align": "start",
@@ -772,7 +770,7 @@ The Reconciliation request message body is `ReconciliationRequest` and contains 
 
 The response contains data of transaction debit and credit counters and the terminal currency.
 
-If the terminal has enabled ECR printing, the reponse contains receipt data in Solitea Pay format.
+If the terminal has enabled ECR printing, the reponse contains receipt data in Dotypay format.
 
 
 + Request (application/json)
@@ -831,7 +829,7 @@ If the terminal has enabled ECR printing, the reponse contains receipt data in S
                                         "bold": false,
                                         "size": 24
                                     },
-                                    "text": "Receipt data in Solitea Pay format",
+                                    "text": "Receipt data in Dotypay format",
                                     "type": "text"
                                 }
                             ]
@@ -893,7 +891,7 @@ POS systems could use this record as a fallback in pairing procedure (e.g. when 
                     {
                         "POIID": "POITERM2",
                         "BusinessId": "25599051",
-                        "MerchantName": "Solitea Pay s.r.o.",
+                        "MerchantName": "Dotypay s.r.o.",
                         "Currency": "EUR"
                     },
                     {
