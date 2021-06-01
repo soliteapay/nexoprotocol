@@ -34,6 +34,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 17.02.2021 | MM     | v2.0.20   | Changed to bearer authorization in request examples |
 | 01.03.2021 | MM     | v2.0.30   | Example requests for Postman |
 | 02.03.2021 | MM     | v2.0.40   | Variable symbol request |
+| 01.06.2021 | PO     | v2.1.80   | ECRPrint in requests |
 
 ## Overview
 
@@ -300,6 +301,9 @@ tip amount, and the `TipAmount` will be present in the response if the whole pay
 The POS can also request the variable symbol prompt by setting the value of `AskForVariableSymbol` in `ProprietaryTags` to `true`.
 The `VariableSymbol` value overrides the `AskForVariableSymbol` - if the `VariableSymbol` is present, the POI will use the provided VS and won't ask the user for it.
 
+If the Proprietary tags in the Request object contain ECRPrint attribute, 
+the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
+
 
 + Request (application/json)
 
@@ -333,7 +337,8 @@ The `VariableSymbol` value overrides the `AskForVariableSymbol` - if the `Variab
                             "ProprietaryTags": {
                                 "AskForTip": true,
                                 "VariableSymbol": "123123",
-                                "AskForVariableSymbol": true
+                                "AskForVariableSymbol": true,
+                                "ECRPrint": true
                             }
                         },
                         "SaleData": {
@@ -463,6 +468,10 @@ In Nexo, it is done by using `"MessageCategory": "Reversal"` in the message head
 
 Original transaction will be identified by data sent in `OriginalPOITransaction.POITransactionID` field.
 
+If the Proprietary tags in the Request object contain ECRPrint attribute, 
+the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
+`ProprietaryTags` object is optional.
+
 + Request (application/json)
 
     + Headers
@@ -490,7 +499,10 @@ Original transaction will be identified by data sent in `OriginalPOITransaction.
                                 "TransactionID": "79fe58f3-511f-4964-9e63-91609ae02273"
                             }
                         },
-                        "ReversalReason" : "MerchantCancel"
+                        "ReversalReason" : "MerchantCancel",
+                        "ProprietaryTags": {
+                            "ECRPrint": true
+                        }
                     }
                 }
             }
@@ -532,6 +544,10 @@ Original transaction will be identified by data sent in `OriginalPOITransaction.
 A request instructing the Gateway to refund a previously completed transaction to the consumer. 
 In Nexo, the refund is done by using `"PaymentType": "Refund"`
 
+If the Proprietary tags in the Request object contain ECRPrint attribute, 
+the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
+`ProprietaryTags` object is optional.
+
 + Request (application/json)
 
     + Headers
@@ -566,6 +582,9 @@ In Nexo, the refund is done by using `"PaymentType": "Refund"`
                                     "TimeStamp": "2020-04-24T15:57:48+02:00",
                                     "TransactionID": "bfb7fab0-e777-416f-9d87-ab4065da01cc"
                                 }
+                            },
+                            "ProprietaryTags": {
+                                "ECRPrint": true
                             }
                         }, "SaleData": {
                             "SaleTransactionID": {
@@ -644,7 +663,7 @@ A TransactionStatusRequest is an error recovery mechanism.
 If the response of the payment request does not arrive within the predefined time limit,
 you can retrieve the final status of the transaction.
 Because the response didn't arrive, the POS cannot use the POI TransactionID because it doesn't know it.
-So the POS will use the `ServiceID` and `MessageCategory` from previously sent `MessageHeader`.
+So the POS will use the `ServiceID`, `SaleID` and `MessageCategory` from previously sent `MessageHeader`.
 
 POI will return a unique transaction from combination of `ServiceID`, `SaleID` and `MessageCategory` from `MessageReference` sent in the Body of the request.
 If the POI won't find exactly one transaction, an error will be returned.
@@ -774,6 +793,10 @@ The response contains data of transaction debit and credit counters and the term
 
 If the terminal has enabled ECR printing, the reponse contains receipt data in Dotypay format.
 
+If the Proprietary tags in the Request object contain ECRPrint attribute, 
+the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
+`ProprietaryTags` object is optional.
+
 
 + Request (application/json)
 
@@ -796,7 +819,10 @@ If the terminal has enabled ECR printing, the reponse contains receipt data in D
                         "ServiceID": "1234567"
                     },
                     "ReconciliationRequest": {
-                        "ReconciliationType": "SaleReconciliation"
+                        "ReconciliationType": "SaleReconciliation",
+                        "ProprietaryTags": {
+                            "ECRPrint": true
+                        }
                     }
                 }
             }
