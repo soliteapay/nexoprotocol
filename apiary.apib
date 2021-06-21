@@ -13,10 +13,10 @@ We will not copy here the entire Nexo standard spec. For further information you
 
 **Payment Protocol Version: 1** (based on Nexo protocol v3.1)
 
-**STPAY version: 2.0.1**
+**Dotypay version: 2.1.100**
 
 #### Changes
-| Date       | Author |Version    | Description|
+| Date       | Author | Version    | Description|
 |------------|:-------|:----------|:--------------|
 | 11.05.2020 | PO     | v1.3.0    | HTTPS implementation, POIID verification in requests |
 | 19.05.2020 | PO     | v1.3.2    | Implicit authentication for certified POSes, new request to get the list of supported POIIDs |
@@ -35,6 +35,8 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 01.03.2021 | MM     | v2.0.30   | Example requests for Postman |
 | 02.03.2021 | MM     | v2.0.40   | Variable symbol request |
 | 01.06.2021 | PO     | v2.1.80   | ECRPrint in requests |
+| 14.06.2021 | PO     | v2.1.90   | Token communication, ECRPrint changes, added new Result Codes |
+
 
 ## Overview
 
@@ -89,11 +91,38 @@ In order to secure the NEXO calls, every request needs to be authorized.
 #### Authentication for versions 2.0 and newer
 
 Requests are authorized with a bearer token, which can be obtained through a POS certification process.
-Every request must contain header field with the token:
+Each request must contain a header field with the token:
 `Authorization: Bearer <token>`
 
-Each token has a limited validity and needs to be periodically renewed.
+Tokens have limited validity and they need to be periodically renewed.
 For development purposes, you can apply for a token, which will work on mockup devices.
+
+##### Token environment
+
+The token environment is bound to an application build type, which restricts its usage in certain application builds.
+
+There are three environment tiers:
+
+1. MOCK - A token with this environment can be used only on MOCK application builds.
+1. MODEL - A token with this environment can be used on MODEL and MOCK application builds.
+1. PRODUCTION - This token can be used in every application build.
+
+##### Token modules
+
+Each token contains a set of modules, which authorizes the ECR to do certain actions.
+
+- BASE module - Basic functionality. Allows Sale and Reversal transactions, TransactionStatusRequest and PoiTermList.
+- PRINTS module - Allows printing on ECR. If the token doesn't contain this module, printing will always be done on the POI.
+- SETTLEMENT module -  Allows creating X and Z reports (reconciliations) from ECR.
+- REFUND module - Allows Refund transactions.
+
+##### The Certification process
+
+Every third party integrator can apply for a `MOCK` environment token.
+With this token, they implement all the functions needed to certify their application.
+Then Dotypay assigns them a token for the `MODEL` environment, which they embed into their application.
+Application with this token type will be used during the certification process in Dotypay.
+If all required tests pass, Dotypay will issue a `PRODUCTION` environment token to the integrator.
 
 #### Authentication for versions 1.2 - 1.5
 Requests are authorized with HTTP Basic Authentication.
@@ -176,6 +205,14 @@ If the POIID in the message header is not identical to the POIID as it is define
 then the POI will not accept the request and it will return an error.
 In the response, the POI will put its POIID in this tag (even if the POS sent the wrong POIID).
 
+#### ECR Print in request
+
+Each request, which may print a receipt, can contain `ProprietaryTags` element with an `ECRPrint` attribute in it.
+If the ECR has a `PRINTS` module in its token, the ECR is allowed to tell the POI, who will print the receipt.
+If the ECR doesn't have the module mentioned above, its usage is forbidden.
+
+When ECRPrint in the request isn't used, the terminal will use it's own configuration to tell the ECR whether it
+must print the receipt or not.
 
 ### Response structure
 
@@ -211,6 +248,7 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | REQUEST_TYPE_NOT_ALLOWED | 108 | The request type is not allowed on this terminal. |
 | WRONG_TID | 109 | Terminal ID (TID, POIID) in the request doesn't correspond with the TID of this payment terminal. |
 | CURRENCY_NOT_ALLOWED | 110 | Payment terminal does not allow to make transactions in this currency. |
+| INVALID_AMOUNT | 111 | The request amount should be greater than zero. |
 | TIMEOUT | 200 | Request timeout. |
 | NOT_FOUND | 201 | Transaction with provided parameters was not found. |
 | NO_REVERSIBLE_TRANSACTION_FOUND | 202 | Cannot reverse the transaction. |
@@ -219,6 +257,7 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | CARD_READ_ERROR | 205 | The provided card could not be read. |
 | ABORTED | 206 | The request was aborted externally. |
 | CARD_READ_TIMEOUT | 207 | The card was not read in time. |
+| NO_CONNECTION | 208 | The payment terminal cannot connect to the payment server. |
 | HOST_REFUSED_GENERIC | 300 | Transaction was refused. |
 | WRONG_PIN | 301 | Transaction was refused because the the customer PIN was incorrect. |
 | EMPTY_HOST_RESPONSE | 302 | Payment authorization switch returned an empty answer. |
@@ -226,6 +265,8 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | PAYMENT_SWITCH_COMMUNICATION_ERROR | 304 | The request was sent to payment switch and the result could not be read. The transaction was not canceled due to another error. If you receive this result code, please call the support to verify the transaction result. |
 | PLACE_CALL | 305 | The transaction requires a phone authorization. The staff member must call the authorization centre to complete the transaction. |
 | SIGNATURE_NOT_VERIFIED | 306 | The transaction was successful and required a signature verification, which failed. The transaction was reversed afterwards. |
+| CALL_SUPPORT | 307 | The transaction was sent to the payment switch and no response was received back. The staff member must call the technical support to discover the transaction result. |
+| EMV_DECLINED | 308 | The transaction was declined by EMV kernel. If the transaction was successfully approved by the host, the transaction was reversed. |
 
 
 #### Concurrency
@@ -235,10 +276,23 @@ If there are more concurrent requests, only the first one will be processed and 
 
 The same scenario is applied if the terminal processes a transaction locally.
 
+#### ECR Print in response
+
+The ECR must print the receipt if the `ECRPrint` attribute in `ProprietaryTags` element is set to `true`.
+If the ECR's token doesn't have the `PRINTS` module, `ECRPrint` will always be `false`.
+The location of `ProprietaryTags` varies depending on the type of Request (see individual Response examples).
+The ECRPrint is available in the app versions `1.4.0` and higher.
+
+Nexo standards definies the location of the receipt data inside PaymentReceipt structure,
+which is located inside the particular response object (see the examples below).
+
+For some reponse objects (ie. ReconciliationResponse) Nexo standards doesn't define PaymentReceipt structure,
+so the Receipt data will be located inside `ProprietaryTags` element.
+
 #### Dotypay receipt format
 
-If ECRPrint in Proprietary tags is set to `true`, from version `1.4.0` will be in the `PaymentResponse` a `PaymentReceipt` object,
-which contains the exact data to print on the ECR.
+If ECRPrint in Proprietary tags is set to `true`, the response object also contains the receipt data in Dotypay format
+and the ECR is obliged to print the receipt.
 
 `outputContent.OutputFormat` determines the data format.
 Currently supported format is `Dotypay` (from version 2.1.0).
@@ -301,9 +355,6 @@ tip amount, and the `TipAmount` will be present in the response if the whole pay
 The POS can also request the variable symbol prompt by setting the value of `AskForVariableSymbol` in `ProprietaryTags` to `true`.
 The `VariableSymbol` value overrides the `AskForVariableSymbol` - if the `VariableSymbol` is present, the POI will use the provided VS and won't ask the user for it.
 
-If the Proprietary tags in the Request object contain ECRPrint attribute, 
-the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
-
 
 + Request (application/json)
 
@@ -337,7 +388,7 @@ the ECRPrint settings will be overriden with this, providing the request was sen
                             "ProprietaryTags": {
                                 "AskForTip": true,
                                 "VariableSymbol": "123123",
-                                "AskForVariableSymbol": true,
+                                "AskForVariableSymbol": false,
                                 "ECRPrint": true
                             }
                         },
@@ -415,7 +466,8 @@ the ECRPrint settings will be overriden with this, providing the request was sen
                                         "type": "twocolumns"
                                     }
                                 ]
-                            }
+                            },
+                            "requiredSignatureFlag": false
                         }
                         "PaymentResult": {
                             "AmountsResp": {
@@ -425,7 +477,7 @@ the ECRPrint settings will be overriden with this, providing the request was sen
                             },
                             "PaymentInstrumentData": {
                                 "CardData": {
-                                    "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                    "MaskedPan": "53xx-xxxx-xxxx-1234"
                                 }
                             },
                             "ProprietaryTags": {
@@ -468,9 +520,6 @@ In Nexo, it is done by using `"MessageCategory": "Reversal"` in the message head
 
 Original transaction will be identified by data sent in `OriginalPOITransaction.POITransactionID` field.
 
-If the Proprietary tags in the Request object contain ECRPrint attribute, 
-the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
-`ProprietaryTags` object is optional.
 
 + Request (application/json)
 
@@ -526,6 +575,25 @@ the ECRPrint settings will be overriden with this, providing the request was sen
                         "ServiceID": "12345678"
                     },
                     "ReversalResponse": {
+                        "PaymentReceipt": {
+                            "documentQualifier": "saleReceipt",
+                            "integratedPrintFlag": true,
+                            "outputContent": {
+                                "DotypayData": [
+                                    {
+                                        "format": {
+                                            "align": "start",
+                                            "bold": false,
+                                            "size": 24
+                                        },
+                                        "text": "Receipt data in Dotypay format",
+                                        "type": "text"
+                                    }
+                                ],
+                                "OutputFormat": "Dotypay"
+                            },
+                            "requiredSignatureFlag": false
+                        },
                         "POIData": {
                             "POITransactionID": {
                                 "TimeStamp": "2020-04-24T14:30:45+02:00",
@@ -544,9 +612,6 @@ the ECRPrint settings will be overriden with this, providing the request was sen
 A request instructing the Gateway to refund a previously completed transaction to the consumer. 
 In Nexo, the refund is done by using `"PaymentType": "Refund"`
 
-If the Proprietary tags in the Request object contain ECRPrint attribute, 
-the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
-`ProprietaryTags` object is optional.
 
 + Request (application/json)
 
@@ -618,6 +683,25 @@ the ECRPrint settings will be overriden with this, providing the request was sen
                         "PaymentData": {
                             "PaymentType": "Refund"
                         },
+                        "PaymentReceipt": {
+                            "documentQualifier": "saleReceipt",
+                            "integratedPrintFlag": true,
+                            "outputContent": {
+                                "DotypayData": [
+                                    {
+                                        "format": {
+                                            "align": "start",
+                                            "bold": false,
+                                            "size": 24
+                                        },
+                                        "text": "Receipt data in Dotypay format",
+                                        "type": "text"
+                                    }
+                                ],
+                                "OutputFormat": "Dotypay"
+                            },
+                            "requiredSignatureFlag": false
+                        },
                         "PaymentResult": {
                             "AmountsResp": {
                                 "AuthorizedAmount": 10.0,
@@ -625,7 +709,7 @@ the ECRPrint settings will be overriden with this, providing the request was sen
                             },
                             "PaymentInstrumentData": {
                                 "CardData": {
-                                    "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                    "MaskedPan": "53xx-xxxx-xxxx-1234"
                                 }
                             },
                             "ProprietaryTags": {
@@ -736,6 +820,49 @@ Result code of the previous transaction is located in `TransactionStatusResponse
                                     "PaymentData": {
                                         "PaymentType": "Normal"
                                     },
+                                    "PaymentReceipt": {
+                                        "documentQualifier": "saleReceipt",
+                                        "integratedPrintFlag": true,
+                                        "outputContent": {
+                                            "OutputFormat": "Dotypay",
+                                            "DotypayData": [
+                                                {
+                                                    "format": {
+                                                        "align": "start",
+                                                        "bold": false,
+                                                        "size": 18
+                                                    },
+                                                    "text": "Basic text",
+                                                    "type": "text"
+                                                },
+                                                {
+                                                    "type": "division"
+                                                },
+                                                {
+                                                    "left": {
+                                                        "format": {
+                                                            "align": "start",
+                                                            "bold": false,
+                                                            "size": 18
+                                                        },
+                                                        "text": "Left column text",
+                                                        "type": "text"
+                                                    },
+                                                    "right": {
+                                                        "format": {
+                                                            "align": "end",
+                                                            "bold": false,
+                                                            "size": 18
+                                                        },
+                                                        "text": "Right column text",
+                                                        "type": "text"
+                                                    },
+                                                    "type": "twocolumns"
+                                                }
+                                            ]
+                                        },
+                                        "requiredSignatureFlag": false
+                                    },
                                     "PaymentResult": {
                                         "AmountsResp": {
                                             "AuthorizedAmount": 10.0,
@@ -743,7 +870,7 @@ Result code of the previous transaction is located in `TransactionStatusResponse
                                         },
                                         "PaymentInstrumentData": {
                                             "CardData": {
-                                                "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                                "MaskedPan": "53xx-xxxx-xxxx-1234"
                                             }
                                         },
                                         "ProprietaryTags": {
@@ -790,12 +917,6 @@ The Reconciliation request message body is `ReconciliationRequest` and contains 
 - `AcquirerSynchronisation`: Reconciliation and closure of the current period, with synchronisation of reconciliations between the POI and the Acquirer. (Z report)
 
 The response contains data of transaction debit and credit counters and the terminal currency.
-
-If the terminal has enabled ECR printing, the reponse contains receipt data in Dotypay format.
-
-If the Proprietary tags in the Request object contain ECRPrint attribute, 
-the ECRPrint settings will be overriden with this, providing the request was sent with a token, which contains PRINTS module.
-`ProprietaryTags` object is optional.
 
 
 + Request (application/json)
