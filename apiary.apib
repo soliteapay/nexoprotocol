@@ -13,7 +13,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 
 **Payment Protocol Version: 1** (based on Nexo protocol v3.1)
 
-**Dotypay version: 2.1.100**
+**Dotypay version: 2.1.160**
 
 #### Changes
 | Date       | Author | Version    | Description|
@@ -36,6 +36,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 02.03.2021 | MM     | v2.0.40   | Variable symbol request |
 | 01.06.2021 | PO     | v2.1.80   | ECRPrint in requests |
 | 14.06.2021 | PO     | v2.1.90   | Token communication, ECRPrint changes, added new Result Codes |
+| 16.08.2021 | SK     | v2.1.160  | Added the description of the Abort Request |
 
 
 ## Overview
@@ -111,7 +112,7 @@ There are three environment tiers:
 
 Each token contains a set of modules, which authorizes the ECR to do certain actions.
 
-- BASE module - Basic functionality. Allows Sale and Reversal transactions, TransactionStatusRequest and PoiTermList.
+- BASE module - Basic functionality. Allows Sale and Reversal transactions, TransactionStatusRequest, AbortRequest and PoiTermList.
 - PRINTS module - Allows printing on ECR. If the token doesn't contain this module, printing will always be done on the POI.
 - SETTLEMENT module -  Allows creating X and Z reports (reconciliations) from ECR.
 - REFUND module - Allows Refund transactions.
@@ -258,6 +259,7 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | ABORTED | 206 | The request was aborted externally. |
 | CARD_READ_TIMEOUT | 207 | The card was not read in time. |
 | NO_CONNECTION | 208 | The payment terminal cannot connect to the payment server. |
+| NOT_ABORTABLE | 209 | Transaction with given parameters cannot be aborted. |
 | HOST_REFUSED_GENERIC | 300 | Transaction was refused. |
 | WRONG_PIN | 301 | Transaction was refused because the the customer PIN was incorrect. |
 | EMPTY_HOST_RESPONSE | 302 | Payment authorization switch returned an empty answer. |
@@ -1008,6 +1010,67 @@ The response contains data of transaction debit and credit counters and the term
                 },
                 "ResultCode": 0
             }
+
+### Abort Request [POST]
+
+The Abort message allows to halt and prematurely terminate the processing of the currently processed message. This request is most commonly used when a processing of a message is taking too much time.
+At the moment only the Payment Request message can be aborted.
+
+The POI will make an attempt to abort the processing of a message identified by the combination of the following attributes: `ServiceID`, `SaleID` and `MessageCategory` from `MessageReference` sent in the Body of the request. 
+If any of these attributes is missing then the request is not processed and an Event Notification message with the attribute `EventToNotify` set to `Reject` is sent as a response. Reason of the abortion should be located in the attribute `AbortReason` of the `AbortRequest` object.
+
+Attributes `SaleID` and `POIID` in the `MessageReference` object must match the `SaleID` and `POIID` attributes present in the message header of the Abort Request message otherwise an Event Notification message with an attribute `EventToNotify` set to `Reject` is sent as a response.
+
+If the referenced message cannot be aborted (e.g., it has already been sent to the issuer) a simple response with result code set to `NOT_ABORTABLE` is sent and the referenced message is not aborted.
+
+If the referenced message can be aborted then a simple response with result code set to `OK` is sent and the POI aborts the ongoing transaction. A message with an attribute `ErrorCondition` set to `Aborted`, attribute `Result` set to `Failure` and attribute `AdditionalResponse` containing the reason of abortion is sent as a response to the sender of the aborted Payment Request.
+
+However, if the referenced message to be aborted has already been processed, an Event Notification message is sent as a response with the attribute `EventToNotify` set to `CompletedMessage`.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
+            Content-Length: <calculated>
+    
+    + Body
+            
+             {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Abort",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "ProtocolVersion": "3.1",
+                        "ServiceID": "POS_ID_1234",
+                        "SaleID": "1234567",
+                        "POIID": "POITerm1"
+                    },
+                    "AbortRequest": {
+                        "MessageReference": {
+                            "MessageCategory": "Payment",
+                            "ServiceID": "POS_ID_1234",
+                            "SaleID": "1234567",
+                            "POIID": "POITerm1"
+
+                        },
+                        "AbortReason": "The processing of the message is taking too long."
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+            {
+                "ResultCode": 0,
+            }
+
 
 ## Protocol extensions [/poitermlist]
 
