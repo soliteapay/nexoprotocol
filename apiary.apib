@@ -37,6 +37,7 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 01.06.2021 | PO     | v2.1.80   | ECRPrint in requests |
 | 14.06.2021 | PO     | v2.1.90   | Token communication, ECRPrint changes, added new Result Codes |
 | 16.08.2021 | SK     | v2.1.160  | Added the description of the Abort Request |
+| 16.08.2021 | HT     | v2.2.0  | Cloud terminal authorization |
 
 
 ## Overview
@@ -88,6 +89,25 @@ The POS (ECR) may send more headers, but they will be ignored by the POI.
 ### Authentication 
 
 In order to secure the NEXO calls, every request needs to be authorized.
+
+#### Authentication for cloud-based communication
+
+Requests are authorized with an API key obtained via the Dotypay Portal - every user can create (and delete) their own
+API key on their profile.
+
+`Authorization: ApiKey <apiKey>`
+
+Each request must also contain two additional headers:
+
+1. `X-Cloud-Identifier` to specify the device the request is meant for. This identifier can be created on a device's edit
+page on the Dotypay Portal. In order for authorization to be successful, the API key provided in the `Authorization`
+header must belong to a user who has access to the specified device.
+
+    `X-Cloud-Identifier: 085c4fbf-b838-45c2-b648-92ffd0c9bd91`
+
+2. `X-Terminal-Authorization` with the bearer token described below (see "Authentication for versions 2.0 and newer").
+    
+    `X-Terminal-Authorization: Bearer <token>`
 
 #### Authentication for versions 2.0 and newer
 
