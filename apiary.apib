@@ -38,7 +38,8 @@ We will not copy here the entire Nexo standard spec. For further information you
 | 14.06.2021 | PO     | v2.1.90   | Token communication, ECRPrint changes, added new Result Codes |
 | 16.08.2021 | SK     | v2.1.160  | Added the description of the Abort Request |
 | 17.08.2021 | HT     | v2.2.0    | Cloud terminal authorization |
-| 29.11.2021 | PO     | v2.3.0    | Added result codes for PIN errors |
+| 29.11.2021 | PO     | v2.3.0-RC1| Added result codes for PIN errors |
+| 29.11.2021 | PO     | v2.3.0-RC4| Added optional field "Note" for AcquirerSynchronisation request |
 
 
 ## Overview
@@ -941,7 +942,11 @@ The Reconciliation request message body is `ReconciliationRequest` and contains 
 
 - `AcquirerSynchronisation`: Reconciliation and closure of the current period, with synchronisation of reconciliations between the POI and the Acquirer. (Z report)
 
+`ProprietaryTags` in `AcquirerSynchronisation` request may contain optional text note, which will be printed on the receipt.
+This note will be repeated in the response.
+
 The response contains data of transaction debit and credit counters and the terminal currency.
+
 
 
 + Request (application/json)
@@ -965,9 +970,10 @@ The response contains data of transaction debit and credit counters and the term
                         "ServiceID": "1234567"
                     },
                     "ReconciliationRequest": {
-                        "ReconciliationType": "SaleReconciliation",
+                        "ReconciliationType": "AcquirerSynchronisation",
                         "ProprietaryTags": {
-                            "ECRPrint": true
+                            "ECRPrint": true,
+                            "Note": "Custom note to identify this reconciliation"
                         }
                     }
                 }
@@ -996,6 +1002,7 @@ The response contains data of transaction debit and credit counters and the term
                         "POIReconciliationID": 1,
                         "ProprietaryTags": {
                             "ECRPrint": true,
+                            "Note": "Custom note to identify this reconciliation",
                             "ReceiptData": [
                                 {
                                     "format": {
@@ -1008,7 +1015,7 @@ The response contains data of transaction debit and credit counters and the term
                                 }
                             ]
                         },
-                        "ReconciliationType": "SaleReconciliation",
+                        "ReconciliationType": "AcquirerSynchronisation",
                         "TransactionTotals": [
                             {
                                 "PaymentCurrency": "CZK",
