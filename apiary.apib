@@ -28,6 +28,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 16.08.2021 | SK     | v2.1.160  | Added the description of the Abort Request |
 | 17.08.2021 | HT     | v2.2.0    | Cloud terminal authorization |
 | 29.11.2021 | PO     | v2.3.0    | Added result codes for PIN errors, Added optional field "Note" for AcquirerSynchronisation request |
+| 06.04.2022 | PO     | v2.3.40   | Added support for DNS-SD |
 
 ## Overview
 
@@ -165,6 +166,19 @@ Request intent must target the launch intent for STPAY package (`com.stpos.a8pos
         }
 ```
 After STPAY starts the server, it will return back to the Activity, which sent the Intent.
+
+### DNS-SD Service
+
+When the HTTPS interface is enabled, the device let's the local network know about its existence via DNS Service Discovery.
+
+This service primarily serves the ECR to determine the address and port of the POI device if they have changed.
+The ECR identifies the terminal using a unique DeviceId, which it transmits as part of its service name.
+
+The service type is `_https._tcp.`, service name is `DotypayNexoServer/DeviceId`.
+
+For information about the DeviceId, please see the POI Terminal List (`/poitermlist` request) section.
+
+This feature is available from version `2.3.40`.
 
 ## Intent based communication
 
@@ -1102,6 +1116,9 @@ which is communicating with.
 The **first record** of POI Terminal list contains information about the proprietor of the physical device. 
 POS systems could use this record as a fallback in pairing procedure (e.g. when POIID can't be found by BusinessID and Currency).
 
+Starting with version 2.3.40, the response also contains a `DeviceId` field, which uniquely identifies the device among others.
+This identifier is being broadcasted via DNS-Service Discovery.
+
 + Request (application/json)
 
     + Headers
@@ -1117,6 +1134,7 @@ POS systems could use this record as a fallback in pairing procedure (e.g. when 
     
             {
                 "ResultCode": 0,
+                "DeviceId": "ABCDE12345",
                 "POITerminalList": [
                     {
                         "POIID": "POITERM2",
