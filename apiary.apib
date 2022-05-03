@@ -29,6 +29,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 17.08.2021 | HT     | v2.2.0    | Cloud terminal authorization |
 | 29.11.2021 | PO     | v2.3.0    | Added result codes for PIN errors, Added optional field "Note" for AcquirerSynchronisation request |
 | 06.04.2022 | PO     | v2.3.40   | Added support for DNS-SD |
+| 03.05.2022 | PO     | v2.3.60   | Added SETTLEMENT_ERROR result code |
 
 ## Overview
 
@@ -295,6 +296,7 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | SIGNATURE_NOT_VERIFIED | 306 | The transaction was successful and required a signature verification, which failed. The transaction was reversed afterwards. |
 | CALL_SUPPORT | 307 | The transaction was sent to the payment switch and no response was received back. The staff member must call the technical support to discover the transaction result. |
 | EMV_DECLINED | 308 | The transaction was declined by EMV kernel. If the transaction was successfully approved by the host, the transaction was reversed. |
+| SETTLEMENT_ERROR | 309 | Settlement has been sent to the acquirer and the result was not delivered, or it ended up with an error. The staff member should be prompted to try the request again and, if it also fails, to call a technical support. |
 
 
 #### Concurrency
