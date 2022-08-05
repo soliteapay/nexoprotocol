@@ -807,8 +807,8 @@ Result code of the previous transaction is located in `TransactionStatusResponse
                     "TransactionStatusRequest": {
                         "MessageReference": {
                             "MessageCategory": "Payment",
-                            "ServiceID": "123456",
-                            "SaleID": "POS_ID_1234"
+                            "SaleID": "POS_ID_1234",
+                            "ServiceID": "123456"
                         }
                     }
                 }
@@ -1077,15 +1077,15 @@ However, if the referenced message to be aborted has already been processed, an 
                         "MessageClass": "Service",
                         "MessageType": "Request",
                         "ProtocolVersion": "3.1",
-                        "ServiceID": "POS_ID_1234",
-                        "SaleID": "1234567",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567",
                         "POIID": "POITerm1"
                     },
                     "AbortRequest": {
                         "MessageReference": {
                             "MessageCategory": "Payment",
-                            "ServiceID": "POS_ID_1234",
-                            "SaleID": "1234567",
+                            "SaleID": "POS_ID_1234",
+                            "ServiceID": "1234567",
                             "POIID": "POITerm1"
 
                         },
