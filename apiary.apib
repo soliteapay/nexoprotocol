@@ -30,6 +30,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 29.11.2021 | PO     | v2.3.0    | Added result codes for PIN errors, Added optional field "Note" for AcquirerSynchronisation request |
 | 06.04.2022 | PO     | v2.3.40   | Added support for DNS-SD |
 | 03.05.2022 | PO     | v2.3.60   | Added SETTLEMENT_ERROR result code |
+| 14.09.2022 | PO     | v2.3.130  | Added Diagnosis request support |
 
 ## Overview
 
@@ -1103,6 +1104,96 @@ However, if the referenced message to be aborted has already been processed, an 
     
             {
                 "ResultCode": 0,
+            }
+
+### Diagnosis Request [POST]
+
+The diagnosis request is used to discover status of the POI terminal.
+If the Diagnosis request contains `HostDiagnosisFlag` set to `false` or absent,
+the Diagnostic response does not contain any `HostStatus` data structure.
+
+If the Diagnosis request has `HostDiagnosisFlag` set to `true`,
+the POI tests the communication with the acquirer and the Diagnostic response must contain a `HostStatus` data structure.
+
+
+The Diagnosis response message body DiagnosisResponse, contains the following information:
+
+1. The state of the various modules of the POI Terminal `POIStatus`:
+    1. The overall status of the POI Terminal: `GlobalStatus`.
+        Possible values:
+        - `OK` - The POI is ready to receive and process a request.
+        - `Busy` - The POI Terminal cannot process a request because another processing is in progress.
+        - `Maintenance` - The POI is in maintenance processing.
+        - `Unreachable` - The POI is unreachable or not responding.
+    1. The status of the security module: `SecurityOKFlag`.
+    1. The status of the printer: `PrinterStatus`. 
+        Possible values:
+        - `OK` - The printer is operational.
+        - `PaperLow` -  The printer is operational but paper roll is almost empty.
+        - `NoPaper` - Paper roll is empty, an operator must insert a new paper roll.
+        - `PaperJam` - An operator must remove the paper jam manually.
+        - `OutOfOrder` - The printer is out of order.
+        
+    1. The status of the communication module: `CommunicationOKFlag`.
+1. If requested, the state of the Acquirer Hosts `HostStatus`:
+    1. The status of connectivity to the Host: `IsReachableFlag`.
+    1. Additional data from the Acquirer in `ProprietaryTags`:
+        1. If the communication is successful, `HostResponseOK` holds `true`.
+        1. Additional acquirer message in `HostResponseMessage`.
+        
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
+            Content-Length: <calculated>
+    
+    + Body
+    
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Diagnosis",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567"
+                    },
+                    "DiagnosisRequest": {
+                        "HostDiagnosisFlag": true
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+            {
+                "SaleToPOIResponse": {
+                    "DiagnosisResponse": {
+                        "HostStatus": {
+                            "IsReachableFlag": true,
+                            "ProprietaryTags": {
+                                "HostResponseMessage": "acquirer response message",
+                                "HostResponseOK": true
+                            }
+                        },
+                        "POIStatus": {
+                            "CommunicationOKFlag": true,
+                            "GlobalStatus": "OK",
+                            "PrinterStatusType": "OK",
+                            "SecurityOKFlag": true
+                        }
+                    }
+                },
+                "ResultCode": 0
             }
 
 
