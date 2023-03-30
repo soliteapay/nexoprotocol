@@ -21,7 +21,8 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 06.04.2022 | PO     | v2.3.40   | Added support for DNS-SD |
 | 03.05.2022 | PO     | v2.3.60   | Added SETTLEMENT_ERROR result code |
 | 14.09.2022 | PO     | v2.3.130  | Added Diagnosis request support |
-| 24.01.2022 | PO     | v2.4.70   | Added support for custom identifier |
+| 24.01.2023 | PO     | v2.4.70   | Added support for custom identifier |
+| 30.03.2023 | PO     | v2.5.20   | Added new proprietary tags for tips |
 
 ## Overview
 
@@ -382,6 +383,13 @@ to the acquirer.
 The POS can request the custom identifier prompt by setting the value of `AskForCustomIdentifier` in `ProprietaryTags` to `true`.
 The `CustomIdentifier` value overrides the `AskForCustomIdentifier` - if the `CustomIdentifier` is present, the POI will use the provided identifier and won't ask the user for it.
 
+When `RequireTipConfirmation` proprietary tag is set to `true`, smart tip selection must be confirmed by pressing the "Next" button. Default value is `false`.
+If `null`, terminal settings will be used.
+
+When `EnterTipAsTargetAmount` proprietary tag is set to `true`, the user should enter tip as a target amount (base amount incl. tip), `false` to enter just the tip.
+If `null`, terminal settings will be used.
+
+When `ForceCustomTip` proprietary tag is set to `true`, the terminal will force entering the tip manually, even if the smart tips are enabled.
 
 + Request (application/json)
 
@@ -415,9 +423,12 @@ The `CustomIdentifier` value overrides the `AskForCustomIdentifier` - if the `Cu
                             "ProprietaryTags": {
                                 "AskForTip": true,
                                 "VariableSymbol": "123123",
-                                "CustomIdentifier": "ABCD123"
+                                "CustomIdentifier": "ABCD123",
                                 "AskForVariableSymbol": false,
-                                "ECRPrint": true
+                                "ECRPrint": true,
+                                "RequireTipConfirmation": false,
+                                "EnterTipAsTargetAmount": false,
+                                "ForceCustomTip": false
                             }
                         },
                         "SaleData": {
@@ -515,14 +526,14 @@ The `CustomIdentifier` value overrides the `AskForCustomIdentifier` - if the `Cu
                                 "Brand": "MASTER",
                                 "CardExpiration": "20220731",
                                 "CardPresentationMethod": "CLESS",
-                                "CustomIdentifier": "ABCD123"
+                                "CustomIdentifier": "ABCD123",
                                 "ECRPrint": true,
                                 "ReceiptDate": "2020-04-24T14:20:11+02:00",
                                 "SequenceNumber": "1234567890",
                                 "SignatureRequired": false,
                                 "TerminalId": "POITerm1  ",
                                 "VariableSymbol": "123123",
-                                "VerifiedByDevice": false
+                                "VerifiedByDevice": false,
                             }
                         },
                         "POIData": {
@@ -1210,6 +1221,9 @@ POS systems could use this record as a fallback in pairing procedure (e.g. when 
 Starting with version 2.3.40, the response also contains a `DeviceId` field, which uniquely identifies the device among others.
 This identifier is being broadcasted via DNS-Service Discovery.
 
+Starting with version 2.5.20, the response also contains `SmartTipsAvailable` field, which holds `true`
+if the terminal supports smart tip selection.
+
 + Request (application/json)
 
     + Headers
@@ -1231,13 +1245,15 @@ This identifier is being broadcasted via DNS-Service Discovery.
                         "POIID": "POITERM2",
                         "BusinessId": "25599051",
                         "MerchantName": "Dotypay s.r.o.",
-                        "Currency": "EUR"
+                        "Currency": "EUR",
+                        "SmartTipsAvailable": false
                     },
                     {
                         "POIID": "POITERM1",
                         "BusinessId": "25292498",
                         "MerchantName": "Smart software s.r.o.",
-                        "Currency": "CZK"
+                        "Currency": "CZK",
+                        "SmartTipsAvailable": true
                     }
                 ]
             }
