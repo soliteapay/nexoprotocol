@@ -23,6 +23,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 14.09.2022 | PO     | v2.3.130  | Added Diagnosis request support |
 | 24.01.2023 | PO     | v2.4.70   | Added support for custom identifier |
 | 30.03.2023 | PO     | v2.5.20   | Added new proprietary tags for tips |
+| 29.06.2023 | PO     | v2.5.xx   | Added Transaction report request |
 
 ## Overview
 
@@ -1200,6 +1201,181 @@ The Diagnosis response message body DiagnosisResponse, contains the following in
                             "PrinterStatusType": "OK",
                             "SecurityOKFlag": true
                         }
+                    }
+                },
+                "ResultCode": 0
+            }
+
+### Transaction Report Request [POST]
+
+The Transaction Report Messages implement the possibility for the Sale system to request to the POI system a report on a list of transactions.
+
+The request contains search criteria parameters to select which transactions will be included in the
+report.
+
+The TransactionReport request message body TransactionReportRequest, contains the following
+information:
+
+1. 1 or More combined SearchCriterias used to match transactions
+1. Optionaly a SearchOutputOrder (will be implemented in future)
+1. Optionaly the index BlockStart of the first transaction and BlockStop of the last transaction
+
+The Transaction Report response message body TransactionReportResponse, contains the following
+information:
+
+1. The result of the Transaction Report request: Response.
+1. The total number of transactions matching the search criterias ReportFullSize
+1. The index BlockStart of the first transaction
+1. The index BlockStop of the last transaction
+1. List of Transaction Report containing one Transaction Report for each transaction matching the Search criterias. This list may be partial according to requested block.
+
+Supported search criteria targets: `CREATION_DATE`, `UUID`, `MASKED_PAN`.
+
+Supported opeartors: `EQ`, `LT`, `LE`, `GT`, `GE`.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
+            Content-Length: <calculated>
+    
+    + Body
+    
+            {
+              "SaleToPOIRequest" : {
+                "MessageHeader" : {
+                  "MessageCategory" : "TransactionReport",
+                  "MessageClass" : "Service",
+                  "MessageType" : "Request",
+                  "POIID" : "POITerm1",
+                  "ProtocolVersion" : "3.1",
+                  "SaleID" : "POS_ID_1234",
+                  "ServiceID" : "1234567"
+                },
+                "TransactionReportRequest" : {
+                    "BlockStart": 0,
+                    "BlockStop": 2,
+                    "DescendingOrder": true,
+                    "SearchCriterias": {
+                        "SearchOR": [
+                            {
+                                "SearchAND": [
+                                    {
+                                        "Target": "CREATION_DATE",
+                                        "Operator": "GT",
+                                        "Value": "2023-06-28T11:00:00"
+                                    },
+                                    {
+                                        "Target": "CREATION_DATE",
+                                        "Operator": "LT",
+                                        "Value": "2023-06-28T11:07:00"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                  
+                }
+              }
+            }   
+
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+            {
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "TransactionReport",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "1234567"
+                    },
+                    "TransactionReportResponse": {
+                        "BlockStart": 0,
+                        "BlockStop": 2,
+                        "ReportFullSize": 3,
+                        "TransactionReport": [
+                            {
+                                "PaymentResult": {
+                                    "AmountsResp": {
+                                        "AuthorizedAmount": 56.00,
+                                        "Currency": "CZK"
+                                    },
+                                    "PaymentInstrumentData": {
+                                        "CardData": {
+                                            "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                        }
+                                    },
+                                    "ProprietaryTags": {
+                                        "Aid": "A0000000041010",
+                                        "ApplicationName": "DEBIT MASTERCARD",
+                                        "Brand": "MASTER",
+                                        "CardExpiration": "2507",
+                                        "CardPresentationMethod": "CLESS",
+                                        "ECRPrint": false,
+                                        "SequenceNumber": "1234567890",
+                                        "SignatureRequired": false,
+                                        "TerminalId": "TS011",
+                                        "VerifiedByDevice": false
+                                    }
+                                },
+                                "POIData": {
+                                    "POITransactionID": {
+                                        "TransactionID": "4f70fd0905ccc5580b00ed6ce13b0b31f0aea545"
+                                    }
+                                },
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            },
+                            {
+                                "PaymentResult": {
+                                    "AmountsResp": {
+                                        "AuthorizedAmount": 56.00,
+                                        "Currency": "CZK"
+                                    },
+                                    "PaymentInstrumentData": {
+                                        "CardData": {
+                                            "MaskedPan": "53xx-xxxx-xxxx-4405"
+                                        }
+                                    },
+                                    "ProprietaryTags": {
+                                        "Aid": "A0000000041010",
+                                        "ApplicationName": "DEBIT MASTERCARD",
+                                        "AuthorizationCode": "MOCK-917180",
+                                        "Brand": "MASTER",
+                                        "CardExpiration": "2507",
+                                        "CardPresentationMethod": "CLESS",
+                                        "CustomIdentifier": "jbvb",
+                                        "ECRPrint": false,
+                                        "ReceiptDate": "2023-06-28T11:06:38+02:00",
+                                        "SequenceNumber": "1234567890",
+                                        "SignatureRequired": false,
+                                        "TerminalId": "TS011",
+                                        "VariableSymbol": "005",
+                                        "VerifiedByDevice": false
+                                    }
+                                },
+                                "POIData": {
+                                    "POITransactionID": {
+                                        "TimeStamp": "2023-06-28T11:06:38+02:00",
+                                        "TransactionID": "a223dbbe365f8c3f02a3c50ea0e842d9951d8b03"
+                                    }
+                                },
+                                "Response": {
+                                    "ErrorCondition": "Refusal",
+                                    "Result": "Failure"
+                                }
+                            }
+                        ]
                     }
                 },
                 "ResultCode": 0
