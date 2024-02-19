@@ -23,7 +23,10 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 14.09.2022 | PO     | v2.3.130  | Added Diagnosis request support |
 | 24.01.2023 | PO     | v2.4.70   | Added support for custom identifier |
 | 30.03.2023 | PO     | v2.5.20   | Added new proprietary tags for tips |
-| 29.06.2023 | PO     | v2.5.xx   | Added Transaction report request |
+| 29.06.2023 | PO     | v2.5.60   | Added Transaction report request |
+| 19.02.2024 | PO     | v2.5.70   | Added new auth token module and extended poitermlist parameter |
+| 19.02.2024 | PO     | v2.5.80   | Added new data to extended poitermlist response |
+| 19.02.2024 | PO     | v2.5.90   | Added new data to extended poitermlist response and receipt data to transaction report |
 
 ## Overview
 
@@ -102,6 +105,7 @@ Each token contains a set of modules, which authorizes the ECR to do certain act
 - PRINTS module - Allows printing on ECR. If the token doesn't contain this module, printing will always be done on the POI.
 - SETTLEMENT module -  Allows creating X and Z reports (reconciliations) from ECR.
 - REFUND module - Allows Refund transactions.
+- TRANSACTION_LIST module - Allows calling the transaction report
 
 ##### The Certification process
 
@@ -1229,9 +1233,16 @@ information:
 1. The index BlockStop of the last transaction
 1. List of Transaction Report containing one Transaction Report for each transaction matching the Search criterias. This list may be partial according to requested block.
 
-Supported search criteria targets: `CREATION_DATE`, `UUID`, `MASKED_PAN`.
+Supported search criteria targets: `CREATION_DATE`, `UUID`, `MASKED_PAN` and `SERVICE_ID`.
+
+`SERVICE_ID` is supported from version 2.5.120 onwards.
+
 
 Supported opeartors: `EQ`, `LT`, `LE`, `GT`, `GE`.
+
+Starting with version `2.5.90`, support for `ProprietaryTags.IncludePaymentReceipts` is added.
+When `IncludePaymentReceipts` is set to `true`, transactions will contain their receipt data.
+Default value is `false`.
 
 + Request (application/json)
 
@@ -1274,8 +1285,10 @@ Supported opeartors: `EQ`, `LT`, `LE`, `GT`, `GE`.
                                 ]
                             }
                         ]
+                    },
+                    "ProprietaryTags": {
+                        "IncludePaymentReceipts": true
                     }
-                  
                 }
               }
             }   
@@ -1334,6 +1347,28 @@ Supported opeartors: `EQ`, `LT`, `LE`, `GT`, `GE`.
                                 },
                                 "Response": {
                                     "Result": "Success"
+                                },
+                                "PaymentReceipt": {
+                                    "documentQualifier": "saleReceipt",
+                                    "isIntegratedPrintFlag": true,
+                                    "isRequiredSignatureFlag": false,
+                                    "outputContent": {
+                                        "DotypayData": [
+                                            {
+                                                "format": {
+                                                    "align": "start",
+                                                    "bold": false,
+                                                    "size": 18
+                                                },
+                                                "text": "Receipt data...",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "type": "division"
+                                            }
+                                        ],
+                                        "OutputFormat": "Dotypay"
+                                    }
                                 }
                             },
                             {
@@ -1400,12 +1435,24 @@ This identifier is being broadcasted via DNS-Service Discovery.
 Starting with version 2.5.20, the response also contains `SmartTipsAvailable` field, which holds `true`
 if the terminal supports smart tip selection.
 
+Starting with version 2.5.60, the app supports `extended` parameter, which allows extended terminal information retrieval.
+If the `extended` parameter value is equal to `true`, response will contain a `AdditionalData` structure.
+`branchId`, `merchantId`, `CustomIdentifierCaption` (v2.5.80 and newer), `customIdentifierForbiddenCharacters` (v2.5.90 and newer)  and `DisplayName` (v2.5.80 and newer) may be `null`.
+
+
+        
+
 + Request (application/json)
 
+    + Parameters
+        + extended (boolean) - Whether to retrieve extended information about terminal. Defaults to `false`.
+        
+        
     + Headers
     
             Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
-            
+
+ 
 + Response 200 (application/json)
 
     + Headers
@@ -1422,14 +1469,34 @@ if the terminal supports smart tip selection.
                         "BusinessId": "25599051",
                         "MerchantName": "Dotypay s.r.o.",
                         "Currency": "EUR",
-                        "SmartTipsAvailable": false
+                        "SmartTipsAvailable": false,
+                        "AdditionalData": {
+                            "BranchId": "123456",
+                            "CustomIdentifierCaption": "Enter custom id",
+                            "CustomIdentifierForbiddenCharacters": "",
+                            "DisplayName": "Terminal 2",
+                            "MerchantId": "654321",
+                            "ParserVariableSymbolFromCustomIdentifier": false,
+                            "QrPaymentEnabled": true,
+                            "VariableSymbolAllowed": false
+                        }
                     },
                     {
                         "POIID": "POITERM1",
                         "BusinessId": "25292498",
                         "MerchantName": "Smart software s.r.o.",
                         "Currency": "CZK",
-                        "SmartTipsAvailable": true
+                        "SmartTipsAvailable": true,
+                        "AdditionalData": {
+                            "BranchId": "234567",
+                            "CustomIdentifierCaption": "",
+                            "CustomIdentifierForbiddenCharacters": ",+[]",
+                            "DisplayName": "Terminal 1",
+                            "MerchantId": "765432",
+                            "ParserVariableSymbolFromCustomIdentifier": true,
+                            "QrPaymentEnabled": true,
+                            "VariableSymbolAllowed": true
+                        }
                     }
                 ]
             }
