@@ -58,9 +58,7 @@ This certificate is used just to enable an encrypted communication, not to verif
 
 ### Default values
 
-Default port number for STPay is set to `7500` for production release and `6999` for mock release.
-Default basic authentication values are `user:pass` (only for version 1.2-1.5).
-For versions 2.0.x and above please use bearer authorization. 
+Default port number for STPay is set to `7500` for production, test and mock release.
 Please contact integrace@dotypay.com for mock device and token.
 
 ## HTTP Format
@@ -78,7 +76,7 @@ The POS (ECR) may send more headers, but they will be ignored by the POI.
 
 In order to secure the NEXO calls, every request needs to be authorized and authenticated.
 
-#### Authentication for versions 2.0 and newer
+#### Authentication
 
 Requests are authorized with a bearer token, which can be obtained through a POS certification process.
 Each request must contain a header field with the token:
@@ -105,7 +103,9 @@ Each token contains a set of modules, which authorizes the ECR to do certain act
 - PRINTS module - Allows printing on ECR. If the token doesn't contain this module, printing will always be done on the POI.
 - SETTLEMENT module -  Allows creating X and Z reports (reconciliations) from ECR.
 - REFUND module - Allows Refund transactions.
-- TRANSACTION_LIST module - Allows calling the transaction report
+- STATUS module - Allows to proceed handshake with aquirer.
+- TRANSACTION_LIST module - Allows to get transaction list (filtered by date).
+- PAIRING module - Allows to start POS pairing procedure.
 
 ##### The Certification process
 
@@ -114,17 +114,6 @@ With this token, they implement all the functions needed to certify their applic
 Then Dotypay assigns them a token for the `MODEL` environment, which they embed into their application.
 Application with this token type will be used during the certification process in Dotypay.
 If all required tests pass, Dotypay will issue a `PRODUCTION` environment token to the integrator.
-
-#### Authentication for versions 1.2 - 1.5
-Requests are authorized with HTTP Basic Authentication.
-Basic Authentication is a method for an HTTP user agent to provide a username and password when making a request.
-This method request contains a header field in the form 
-`Authorization: Basic <credentials>`, where credentials is the base64 encoding 
-of username and password joined by a single colon `:` . 
-For more information visit https://en.wikipedia.org/wiki/Basic_access_authentication.
-
-The certified Point Of Sale systems such as Dotykacka, Markeeta, ProfiUctenka and SmartPOS can use 
-the hardcoded username and password, these have been assigned during the certification process.
 
 #### Authentication for cloud-based communication
 
