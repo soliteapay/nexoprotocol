@@ -274,6 +274,7 @@ Each response object contains a result code in a `ResultCode` field to identify 
 | NOT_ABORTABLE | 209 | Transaction with given parameters cannot be aborted. |
 | PIN_TIMEOUT | 210 | The PIN hasn't been entered in time. |
 | PIN_ERROR | 211 | An irrecoverable error happened while entering a PIN. |
+| PIN_ERROR | 212 | Recoverable error indicating that a PIN key is not synchronized. The application automatically attempts synchronize the key. |
 | HOST_REFUSED_GENERIC | 300 | Transaction was refused. |
 | WRONG_PIN | 301 | Transaction was refused because the the customer PIN was incorrect. |
 | EMPTY_HOST_RESPONSE | 302 | Payment authorization switch returned an empty answer. |
