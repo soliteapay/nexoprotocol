@@ -119,16 +119,11 @@ If all required tests pass, Dotypay will issue a `PRODUCTION` environment token 
 #### Authentication for cloud-based communication
 
 When the cloud-terminal feature is enabled in POI configuration, POS can send request using cloud service on https://cloud-terminal.dotypay.com.
-Requests are authorized with an API key obtained via the Dotypay Portal - every user can create (and delete) their own
-API key on their profile.
 
-`Authorization: ApiKey <apiKey>`
-
-Each request must also contain two additional headers:
+Each request must contain two headers:
 
 1. `X-Cloud-Identifier` to specify the device the request is meant for. This identifier can be created on a device's edit
-page on the Dotypay Portal. In order for authorization to be successful, the API key provided in the `Authorization`
-header must belong to a user who has access to the specified device.
+page on the Dotypay Portal. The identifier is a randomly generated UUID.
 
     `X-Cloud-Identifier: 085c4fbf-b838-45c2-b648-92ffd0c9bd91`
 
