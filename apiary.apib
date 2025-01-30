@@ -105,9 +105,10 @@ Each token contains a set of modules, which authorizes the ECR to do certain act
 - PRINTS module - Allows printing on ECR. If the token doesn't contain this module, printing will always be done on the POI.
 - SETTLEMENT module -  Allows creating X and Z reports (reconciliations) from ECR.
 - REFUND module - Allows Refund transactions.
-- STATUS module - Allows to proceed handshake with aquirer.
+- STATUS module - Allows to proceed handshake with acquirer.
 - TRANSACTION_LIST module - Allows to get transaction list (filtered by date).
 - PAIRING module - Allows to start POS pairing procedure.
+- APP_BEHAVIOR module - Allows to change the app's default behavior.
 
 ##### The Certification process
 
@@ -332,6 +333,8 @@ The sample output is in the Sale response.
 #### Configuring Dotypay to Minimize After Processing Remote Requests
 
 `ForceMinimize` is an optional field within `ProprietaryTags`. When set to `true`, Dotypay minimizes after completing the request processing, allowing the application that was in the foreground prior to the request to return.
+
+To use the `ForceMinimize` field, the ECR must have the `APP_BEHAVIOR` module. 
 
 **Example:**
 
