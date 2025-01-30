@@ -28,6 +28,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 19.02.2024 | PO     | v2.5.80   | Added new data to extended poitermlist response |
 | 19.02.2024 | PO     | v2.5.90   | Added new data to extended poitermlist response and receipt data to transaction report |
 | 19.07.2024 | SK     | v3.0.70   | Added Deferred Sale (Pre-Authorization) request documentation |
+| 29.01.2025 | SK     | v3.1.40   | Added ForceMinimize proprietary tag field documentation |
 
 ## Overview
 
@@ -104,9 +105,10 @@ Each token contains a set of modules, which authorizes the ECR to do certain act
 - PRINTS module - Allows printing on ECR. If the token doesn't contain this module, printing will always be done on the POI.
 - SETTLEMENT module -  Allows creating X and Z reports (reconciliations) from ECR.
 - REFUND module - Allows Refund transactions.
-- STATUS module - Allows to proceed handshake with aquirer.
+- STATUS module - Allows to proceed handshake with acquirer.
 - TRANSACTION_LIST module - Allows to get transaction list (filtered by date).
 - PAIRING module - Allows to start POS pairing procedure.
+- APP_BEHAVIOR module - Allows to change the app's default behavior.
 
 ##### The Certification process
 
@@ -328,6 +330,21 @@ Each line is a JSON object with predefined format.
 
 The sample output is in the Sale response.
 
+#### Configuring Dotypay to Minimize After Processing Remote Requests
+
+`ForceMinimize` is an optional field within `ProprietaryTags`. When set to `true`, Dotypay minimizes after completing the request processing, allowing the application that was in the foreground prior to the request to return.
+
+To use the `ForceMinimize` field, the ECR must have the `APP_BEHAVIOR` module. 
+
+**Example:**
+
+```
+...
+"ProprietaryTags": {
+    "ForceMinimize": true
+}
+...
+```
 
 ### Mockup
 
