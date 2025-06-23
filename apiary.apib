@@ -30,6 +30,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 19.07.2024 | SK     | v3.0.70   | Added Deferred Sale (Pre-Authorization) request documentation |
 | 29.01.2025 | SK     | v3.1.40   | Added ForceMinimize proprietary tag field documentation |
 | 11.06.2025 | PO     | v3.2.20   | Added new Result codes, added examples to token modules and improved mockup terminal behavior  |
+| 23.06.2025 | PO     | v2.0.0    | Retrospectively added the Intent based communcation authentication |
 
 ## Overview
 
@@ -55,7 +56,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 1. The POS is the client. It creates the TCP/HTTP connection to the POI and sends the request to the POI using HTTP over TCP. The POS keeps the TCP/HTTP connection open until it gets the response.
 1. The request/response protocol between the POS and the POI will be based on HTTP over TCP.
 1. The HTTP body will be of Nexo format. This document will focus on the Nexo messages that are sent in the HTTP body. For more information about Nexo, please refer to Nexo official specification.
-1. For the communication of POS and POI on the same device, it is possible to communicate using Android Intents.
+1. For the communication of POS and POI on the same device, it is possible to communicate using Android Intents, however, even here is preferred the communication via HTTP.
 1. The POI communicates with POS through a HTTPS protocol with self-signed certificate.
 This certificate is used just to enable an encrypted communication, not to verify POI's identity.
 
@@ -183,9 +184,10 @@ The Intent should be send with flags `0`.
 
 The request data in NEXO format must be placed as String Extra under key `NEXO_REQUEST`.
 
-From version `1.4.0` are mandatory String extras `USERNAME` and `PASSWORD`, which will be checked when the request Intent arrives.
-These credentials are the same for both HTTP and Intent communication.
+From version `2.0.0` the requests should be authorized using a token (see the [Authentication section](#Authentication)). This authentication replaces the legacy authentication with one String extra: `TOKEN`.
+The `TOKEN` String Extra field should contain the integrator's token.
 
+Legacy authentication:  (version `1.4.0` and newer): String extras `USERNAME` and `PASSWORD`.
 
 ### Response parameters
 
