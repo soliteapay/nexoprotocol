@@ -31,6 +31,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 29.01.2025 | SK     | v3.1.40   | Added ForceMinimize proprietary tag field documentation |
 | 11.06.2025 | PO     | v3.2.20   | Added new Result codes, added examples to token modules and improved mockup terminal behavior  |
 | 23.06.2025 | PO     | v2.0.0    | Retrospectively added the Intent based communcation authentication |
+| 25.07.2025 | PO     | v3.2.40   | Added speech support |
 
 ## Overview
 
@@ -416,6 +417,9 @@ If `null`, terminal settings will be used.
 
 When `ForceCustomTip` proprietary tag is set to `true`, the terminal will force entering the tip manually, even if the smart tips are enabled.
 
+When `EnableSpeech` is set to `true`, the terminal will speak instructions and the transaction result to the user. Currently, only Czech and English are supported.
+If the device is set to another language, speech will fall back to English.
+
 Amounts specified in the `AmountsReq` object must have a maximum of **7 integer digits** and **2 fraction digits**.
 
 + Request (application/json)
@@ -455,7 +459,8 @@ Amounts specified in the `AmountsReq` object must have a maximum of **7 integer 
                                 "ECRPrint": true,
                                 "RequireTipConfirmation": false,
                                 "EnterTipAsTargetAmount": false,
-                                "ForceCustomTip": false
+                                "ForceCustomTip": false,
+                                "EnableSpeech": true
                             }
                         },
                         "SaleData": {
