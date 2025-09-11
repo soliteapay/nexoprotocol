@@ -1771,3 +1771,36 @@ If the `extended` parameter value is equal to `true`, response will contain a `A
                     }
                 ]
             }
+
+## Dotypay Version [/version]
+
+### Version [GET]
+
+A request to retrieve the version information of the Dotypay application and the Nexo protocol installed on the terminal.
+This request allows apps to verify compatibility with the Dotypay application and Nexo protocol version.
+
+Starting with version Nexo server model 1.1.0, the response contains the following fields:
+
+`VersionName` — the version of the Dotypay application.
+
+`ProtocolVersion` — the version of the Nexo protocol.
+        
+
++ Request (application/json)
+    + Headers
+    
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlb...
+
+ 
++ Response 200 (application/json)
+
+    + Headers
+    
+    
+    + Body
+    
+    {
+    "ResultCode": 0,
+    "VersionName": "3.0.0",
+    "ProtocolVersion": "1.1.0"
+    }
