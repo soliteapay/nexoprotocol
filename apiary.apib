@@ -13,7 +13,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 
 **Payment Protocol Version: 1** (based on Nexo protocol v3.1)
 
-**Dotypay version: 3.1.40**
+**Dotypay version: 3.2.40**
 
 #### Changes
 | Date       | Author | Dotypay Version   | Description|
@@ -32,6 +32,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 11.06.2025 | PO     | v3.2.20   | Added new Result codes, added examples to token modules and improved mockup terminal behavior  |
 | 23.06.2025 | PO     | v2.0.0    | Retrospectively added the Intent based communcation authentication |
 | 25.07.2025 | PO     | v3.2.40   | Added speech support |
+| 22.09.2025 | PO     | v3.2.40   | Added missing case in the mockup terminal behavior |
 
 ## Overview
 
@@ -374,6 +375,7 @@ If the reqested amount is:
 - *greater or equal to 666 and less than 667*: result is `TECHNICAL REVERSAL FAIL`,
 - *greater or equal to 777 and less than 778* and the PaymentType is `Completion`, the terminal simulates `PREAUTHORIZATION FULL` result,
 - *greater or equal to 888 and less than 889*: result is `NETWORK ERROR`,
+- *greater or equal to 999 and less than 1000*: the terminal simulates failed technical reversal (i.e. when the transaction is sent to the acquirer, the terminal doesn't receive the answer and the acquirer doesn't react to the automatic reversal),
 - *greater or equal to 1000*: transaction is declined.
 
 
