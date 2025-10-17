@@ -138,6 +138,16 @@ page on the Dotypay Portal. The identifier is a randomly generated UUID.
 2. `X-Terminal-Authorization` with the bearer token described above (see [Authentication for versions 2.0 and newer](https://dotypay.com/pro-developery/payment-protocol/#authentication-for-versions-20-and-newer)).
     
     `X-Terminal-Authorization: Bearer <token>`
+    
+#### Result code list
+
+| Name                      |   Code  | Description                                                                                                                            |
+| ------------------------- | :-----: | :------------------------------------------------------------------------------------------------------------------------------------- |
+|   BAD_REQUEST_ERROR       |   400   | The server cannot or will not process the request due to an apparent client error (e.g. malformed request syntax, invalid parameters). |
+|   UNAUTHORIZED_ERROR      |   401   | The request has not been applied because it lacks valid authentication credentials for the target resource.                            |
+|   QUEUE_NOT_EXISTS        |   404   | The specified queue does not exist. Verify that the provided queue name is correct.                                                    |
+|   NO_MESSAGE_RECEIVED     |   404   | No message was received from the specified queue. The queue may be empty, unavailable, or contain an invalid cloud identifier                                              |
+|   INTERNAL_SERVER_ERROR   |   500   | The server encountered an unexpected condition that prevented it from fulfilling the request. 
 
 ### First request
 
