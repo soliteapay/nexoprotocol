@@ -1701,7 +1701,187 @@ Default value is `false`.
                 "ResultCode": 0
             }
 
+### Display QR Code [POST]
 
+A request that instructs the terminal (POI) to display information on its screen(s).  
+This is primarily used for **alternative payment methods**, such as displaying a **KVERKOM QR code** for the customer to scan, along with accompanying text and transaction amount.
+
+In Nexo, this is done by using  `"MessageCategory": "Display"` in the message header.
+
+The request contains one or more `DisplayOutput` blocks, where each block can target a different logical screen on the terminal (`POIDisplay`, `CustomerDisplay`).  
+This allows the POS to display, for example, a QR code on the **customer-facing screen** and status information on the **operator-facing screen** simultaneously.
+
+#### Key Fields and Values
+
+
+##### Fields in `DisplayOutput`
+
+| Field      | Description                                                                 | Possible Values |
+|-------------|------------------------------------------------------------------------------|-----------------|
+| `Device` | Specifies the physical screen on the terminal where the content should be displayed. | `POIDisplay`: The operator-facing screen.<br>`CustomerDisplay`: The customer-facing screen. |
+| `InfoQualify` | Qualifies the type of information being displayed. | `Display`: Standard information for the user. |
+
+##### Fields in `OutputContent` and `OutputBarcode`
+
+| Field | Description | Possible Values |
+|--------|--------------|-----------------|
+| `OutputFormat` | Defines the format of the content within this block. | `BarCode`: The content is a barcode defined in `OutputBarcode`.<br>`Text`: The content is plain text defined in the `OutputText` object.
+| `BarcodeType` | Specifies the type of barcode when `OutputFormat` is `BarCode`. | `QRCode` |
+| `QRCodeEncodingMode` | The encoding mode for the QR code. Mandatory for QRCode. | `AlphaNumeric` |
+| `QRCodeErrorCorrection` | The error correction level for the QR code. Mandatory for QRCode. | `L` (Low, 7%)<br>`M` (Medium, 15%)<br>`Q` (Quartile, 25%)<br>`H` (High, 30%) |
+
+#### Behavior and Display Management
+
+##### Updating the Display
+If the POI is currently showing content from a previous `DisplayRequest` and receives a new one targeting the same `Device`,  
+the new content **immediately overwrites** the existing display.  
+
+##### Hiding or Closing the Display
+To clear the content from a screen, send a new `DisplayRequest` with an **empty text string** for the same device.  
+
+The following example shows the primary use case: displaying a QR code and an accompanying text with the amount on the terminal's operator-facing screen (POIDisplay).
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzII1NiJ9.eyJlb...
+            Content-Length: <calculated>
+
+    + Body
+    
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Display-KVERKOM-005"
+                    },
+                    "DisplayRequest": {
+                        "DisplayOutput": [
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "BarCode",
+                                    "OutputBarcode": {
+                                        "BarcodeType": "QRCode",
+                                        "BarcodeValue": "00020126580002010102120216SK123456789012345678905204000053039785405125.505802SK5902EUR62450009NOP123XYZ0132JEDINECNE_ID_TRANSAKCIE_Z_NOP6304ABCD",
+                                        "QRCodeVersion": 10,
+                                        "QRCodeEncodingMode": "AlphaNumeric",
+                                        "QRCodeErrorCorrection": "M"
+                                    }
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": {
+                                        "Text": "Scan to pay"
+                                    }
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": {
+                                        "Text": "125.50 EUR"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Display-KVERKOM-005"
+                    },
+                    "DisplayResponse": {
+                        "Response": {
+                            "Result": "Success"
+                        },
+                        "OutputResult": [
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+            
+
+#### Request to hide the QR code [POST]
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Clear-Display-001"
+                    },
+                    "DisplayRequest": {
+                        "DisplayOutput": [
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": {
+                                        "Text": ""
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+
+  
 ## Protocol extensions [/poitermlist]
 
 ### POI Terminal List [GET]
