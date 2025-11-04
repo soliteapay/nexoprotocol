@@ -1783,9 +1783,11 @@ The following example shows the primary use case: displaying a QR code and an ac
                                 "InfoQualify": "Display",
                                 "OutputContent": {
                                     "OutputFormat": "Text",
-                                    "OutputText": {
-                                        "Text": "Scan to pay"
-                                    }
+                                    "OutputText": [
+                                        {
+                                            "ScanText": "Scan to pay"
+                                        }
+                                    ]
                                 }
                             },
                             {
@@ -1793,9 +1795,12 @@ The following example shows the primary use case: displaying a QR code and an ac
                                 "InfoQualify": "Display",
                                 "OutputContent": {
                                     "OutputFormat": "Text",
-                                    "OutputText": {
-                                        "Text": "125.50 EUR"
-                                    }
+                                    "OutputText": [
+                                        {
+                                            "AmountText": "125.50 EUR"
+                                        }
+                                    ]
+                                    
                                 }
                             }
                         ]
@@ -1872,9 +1877,11 @@ The following example shows the primary use case: displaying a QR code and an ac
                                 "InfoQualify": "Display",
                                 "OutputContent": {
                                     "OutputFormat": "Text",
-                                    "OutputText": {
-                                        "Text": ""
-                                    }
+                                    "OutputText": [
+                                        {
+                                            "Text": ""
+                                        }
+                                    ]
                                 }
                             }
                         ]
