@@ -1709,8 +1709,7 @@ This is primarily used for **alternative payment methods**, such as displaying a
 
 In Nexo, this is done by using  `"MessageCategory": "Display"` in the message header.
 
-The request contains one or more `DisplayOutput` blocks, where each block can target a different logical screen on the terminal (`POIDisplay`, `CustomerDisplay`).  
-This allows the POS to display, for example, a QR code on the **customer-facing screen** and status information on the **operator-facing screen** simultaneously.
+The request's body is a list of `DisplayOutput` items. The terminal will process all items in the list in the order they are sent and render them from top to bottom. This allows for dynamic and rich screen layouts, combining text (`OutputFormat: "Text"`) and QR codes (`OutputFormat: "BarCode"`) as needed.
 
 #### Key Fields and Values
 
@@ -1719,17 +1718,24 @@ This allows the POS to display, for example, a QR code on the **customer-facing 
 
 | Field      | Description                                                                 | Possible Values |
 |-------------|------------------------------------------------------------------------------|-----------------|
-| `Device` | Specifies the physical screen on the terminal where the content should be displayed. | `POIDisplay`: The operator-facing screen.<br>`CustomerDisplay`: The customer-facing screen. |
+| `Device` | Specifies the physical screen on the terminal where the content should be displayed. | `POIDisplay`: The operator-facing screen.|
 | `InfoQualify` | Qualifies the type of information being displayed. | `Display`: Standard information for the user. |
 
-##### Fields in `OutputContent` and `OutputBarcode`
+##### Fields in `OutputContent`
 
 | Field | Description | Possible Values |
 |--------|--------------|-----------------|
 | `OutputFormat` | Defines the format of the content within this block. | `BarCode`: The content is a barcode defined in `OutputBarcode`.<br>`Text`: The content is plain text defined in the `OutputText` object.
+| `OutputBarcode` | The object containing all parameters for a QR/Barcode.. | (Object) |
 | `BarcodeType` | Specifies the type of barcode when `OutputFormat` is `BarCode`. | `QRCode` |
+| `BarcodeValue` | The string data to be encoded in the QR code. | (String) |
+| `QRCodeVersion` | The version (size) of the QR code, from 1 to 40. | (Integer) |
 | `QRCodeEncodingMode` | The encoding mode for the QR code. Mandatory for QRCode. | `AlphaNumeric` |
 | `QRCodeErrorCorrection` | The error correction level for the QR code. Mandatory for QRCode. | `L` (Low, 7%)<br>`M` (Medium, 15%)<br>`Q` (Quartile, 25%)<br>`H` (High, 30%) |
+| `OutputText` | An array containing the text object(s) to be displayed. **Note: Only the first object in the array is processed.** | `[ { ... } ]` |
+| `Text` | The string of text to be displayed. | (String) |
+| `CharacterHeight` | Controls the font size of the text. Mapped to a specific sp value. | `SingleHeight`: Mapped to 20sp.<br>`DoubleHeight`: Mapped to 36sp.<br>`HalfHeight`: Mapped to 16sp. |
+| `CharacterStyle` | Controls the font weight of the text. | `Bold`<br>`Normal` |
 
 #### Behavior and Display Management
 
@@ -1738,9 +1744,9 @@ If the POI is currently showing content from a previous `DisplayRequest` and rec
 the new content **immediately overwrites** the existing display.  
 
 ##### Hiding or Closing the Display
-To clear the content from a screen, send a new `DisplayRequest` with an **empty text string** for the same device.  
+To clear the content from a screen, send a new `DisplayRequest` with an **empty text string** for the same device. This request must have exactly one `DisplayOutput` block 
 
-The following example shows the primary use case: displaying a QR code and an accompanying text with the amount on the terminal's operator-facing screen (POIDisplay).
+####Request (Full Example with QR Code and Styled Text)
 
 + Request (application/json)
 
@@ -1768,10 +1774,24 @@ The following example shows the primary use case: displaying a QR code and an ac
                                 "Device": "POIDisplay",
                                 "InfoQualify": "Display",
                                 "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": [
+                                        {
+                                            "Text": "Scan to pay",
+                                            "CharacterHeight": "SingleHeight",
+                                            "CharacterStyle": "Bold"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
                                     "OutputFormat": "BarCode",
                                     "OutputBarcode": {
                                         "BarcodeType": "QRCode",
-                                        "BarcodeValue": "00020126580002010102120216SK123456789012345678905204000053039785405125.505802SK5902EUR62450009NOP123XYZ0132JEDINECNE_ID_TRANSAKCIE_Z_NOP6304ABCD",
+                                        "BarcodeValue": "https://payme.sk/?V=1&IBAN=DE69250202005956369271&AM=125.50&CC=EUR&DT=20251107&CN=Dotypay.505802SK5902EUR62450009NOP123XYZ0132JEDINECNE_ID_TRANSAKCIE_Z_NOP6304ABCD",
                                         "QRCodeVersion": 10,
                                         "QRCodeEncodingMode": "AlphaNumeric",
                                         "QRCodeErrorCorrection": "M"
@@ -1785,10 +1805,12 @@ The following example shows the primary use case: displaying a QR code and an ac
                                     "OutputFormat": "Text",
                                     "OutputText": [
                                         {
-                                            "ScanText": "Scan to pay"
+                                            "Text": "Amount",
+                                            "CharacterHeight": "HalfHeight",
+                                            "CharacterStyle": "Normal"
                                         }
-                                    ]
-                                }
+                                    }
+                                ]
                             },
                             {
                                 "Device": "POIDisplay",
@@ -1797,12 +1819,13 @@ The following example shows the primary use case: displaying a QR code and an ac
                                     "OutputFormat": "Text",
                                     "OutputText": [
                                         {
-                                            "AmountText": "125.50 EUR"
+                                            "Text": "125.50 EUR",
+                                            "CharacterHeight": "DoubleHeight",
+                                            "CharacterStyle": "Bold"
                                         }
-                                    ]
-                                    
-                                }
-                            }
+                                    }
+                                ]
+                            },
                         ]
                     }
                 }
@@ -1852,7 +1875,6 @@ The following example shows the primary use case: displaying a QR code and an ac
                 }
             }
             
-
 #### Request to hide the QR code [POST]
 
 + Request (application/json)
@@ -1888,7 +1910,30 @@ The following example shows the primary use case: displaying a QR code and an ac
                     }
                 }
             }
+            
++ Response 200 (application/json)
 
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Clear-Display-001"
+                    },
+                    "DisplayResponse": {
+                        "Response": {
+                            "Result": "Success"
+                        },
+                    }
+                }
+            }
   
 ## Protocol extensions [/poitermlist]
 
