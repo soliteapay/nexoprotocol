@@ -1727,15 +1727,49 @@ The request's body is a list of `DisplayOutput` items. The terminal will process
 |--------|--------------|-----------------|
 | `OutputFormat` | Defines the format of the content within this block. | `BarCode`: The content is a barcode defined in `OutputBarcode`.<br>`Text`: The content is plain text defined in the `OutputText` object.
 | `OutputBarcode` | The object containing all parameters for a QR/Barcode.. | (Object) |
-| `BarcodeType` | Specifies the type of barcode when `OutputFormat` is `BarCode`. | `QRCode` |
-| `BarcodeValue` | The string data to be encoded in the QR code. | (String) |
-| `QRCodeVersion` | The version (size) of the QR code, from 1 to 40. | (Integer) |
-| `QRCodeEncodingMode` | The encoding mode for the QR code. Mandatory for QRCode. | `AlphaNumeric` |
-| `QRCodeErrorCorrection` | The error correction level for the QR code. Mandatory for QRCode. | `L` (Low, 7%)<br>`M` (Medium, 15%)<br>`Q` (Quartile, 25%)<br>`H` (High, 30%) |
+| `BarcodeType` | Specifies the type of barcode when `OutputFormat` is `BarCode`. | `QRCode`: Full control over QR code parameters.<br>`SimpleQRCode`: Simplified QR code with automatic parameter detection. |
+| `BarcodeValue` | The string data to be encoded in the QR code. | (String, UTF-8) |
+| `QRCodeVersion` | The version (size) of the QR code, from 1 to 40. **Mandatory for `QRCode`, optional for `SimpleQRCode`.** | (Integer) |
+| `QRCodeEncodingMode` | The encoding mode for the QR code.  **Mandatory for `QRCode`, ignored for `SimpleQRCode`.** | `AlphaNumeric` |
+| `QRCodeErrorCorrection` | The error correction level for the QR code.  **Mandatory for `QRCode`, optional for `SimpleQRCode`.** | `L` (Low, 7%)<br>`M` (Medium, 15%)<br>`Q` (Quartile, 25%)<br>`H` (High, 30%) |
 | `OutputText` | An array containing the text object(s) to be displayed. **Note: Only the first object in the array is processed.** | `[ { ... } ]` |
 | `Text` | The string of text to be displayed. | (String) |
 | `CharacterHeight` | Controls the font size of the text. Mapped to a specific sp value. | `SingleHeight`: Mapped to 20sp.<br>`DoubleHeight`: Mapped to 36sp.<br>`HalfHeight`: Mapped to 16sp. |
 | `CharacterStyle` | Controls the font weight of the text. | `Bold`<br>`Normal` |
+
+##### BarcodeType: QRCode vs SimpleQRCode
+
+###### `QRCode`
+The `QRCode` type provides full control over QR code generation parameters. All QR-specific fields are **mandatory**.
+
+**Mandatory fields:**
+- `BarcodeValue`
+- `QRCodeVersion`
+- `QRCodeEncodingMode`
+- `QRCodeErrorCorrection`
+
+###### `SimpleQRCode`
+The `SimpleQRCode` type simplifies QR code generation by automatically determining optimal parameters. Only the data to encode is required.
+
+**Mandatory fields:**
+- `BarcodeValue` (UTF-8 String)
+
+**Optional fields:**
+- `QRCodeVersion`: If not specified, the library (zxing) automatically selects the appropriate version based on data length.
+- `QRCodeErrorCorrection`: If not specified, the library uses default error correction or automatically determines the optimal level.
+
+**Ignored fields:**
+- `QRCodeEncodingMode`: The library automatically selects the appropriate encoding mode.
+
+**Use `SimpleQRCode` when:**
+- You want the QR code library to automatically optimize parameters
+- You're encoding UTF-8 data (URLs, unicode text, mixed character sets)
+- You don't need strict control over QR code specifications
+
+**Use `QRCode` when:**
+- You need precise control over QR code parameters
+- You're working with specific technical requirements
+- You're encoding alphanumeric-only data with known constraints
 
 #### Behavior and Display Management
 
@@ -1830,7 +1864,7 @@ To clear the content from a screen, send a new `DisplayRequest` with an **empty 
                     }
                 }
             }
-
+                     
 + Response 200 (application/json)
 
     + Body
@@ -1864,6 +1898,207 @@ To clear the content from a screen, send a new `DisplayRequest` with an **empty 
                                     "Result": "Success"
                                 }
                             },
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }   
+            
+
+####Request (Example with SimpleQRCode - Minimal Configuration) [POST]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzII1NiJ9.eyJlb...
+            Content-Length: <calculated>
+
+    + Body
+    
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Display-Simple-QR-001"
+                    },
+                    "DisplayRequest": {
+                        "DisplayOutput": [
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": [
+                                        {
+                                            "Text": "Scan to pay",
+                                            "CharacterHeight": "SingleHeight",
+                                            "CharacterStyle": "Bold"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "BarCode",
+                                    "OutputBarcode": {
+                                        "BarcodeType": "SimpleQRCode",
+                                        "BarcodeValue": "https://payme.sk/?V=1&IBAN=DE69250202005956369271&AM=125.50&CC=EUR&DT=20251107&CN=Dotypay.505802SK5902EUR62450009NOP123XYZ0132JEDINECNE_ID_TRANSAKCIE_Z_NOP6304ABCD",
+                                    }
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": [
+                                        {
+                                            "Text": "Amount",
+                                            "CharacterHeight": "HalfHeight",
+                                            "CharacterStyle": "Normal"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "Text",
+                                    "OutputText": [
+                                        {
+                                            "Text": "1000.00 EUR",
+                                            "CharacterHeight": "DoubleHeight",
+                                            "CharacterStyle": "Bold"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Display-Simple-QR-001"
+                    },
+                    "DisplayResponse": {
+                        "Response": {
+                            "Result": "Success"
+                        },
+                        "OutputResult": [
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            },
+                            {
+                                "Device": "POIDisplay",
+                                "Response": {
+                                    "Result": "Success"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+
+#### Request (Example with SimpleQRCode - With Optional Parameters) [POST]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzII1NiJ9.eyJlb...
+            Content-Length: <calculated>
+
+    + Body
+    
+            {
+                "SaleToPOIRequest": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Request",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Display-Simple-QR-002"
+                    },
+                    "DisplayRequest": {
+                        "DisplayOutput": [
+                            {
+                                "Device": "POIDisplay",
+                                "InfoQualify": "Display",
+                                "OutputContent": {
+                                    "OutputFormat": "BarCode",
+                                    "OutputBarcode": {
+                                        "BarcodeType": "SimpleQRCode",
+                                        "BarcodeValue": "https://payme.sk/?V=1&IBAN=DE69250202005956369271&AM=125.50&CC=EUR&DT=20251107&CN=Dotypay.505802SK5902EUR62450009NOP123XYZ0132JEDINECNE_ID_TRANSAKCIE_Z_NOP6304ABCD",
+                                        "QRCodeVersion": 5,
+                                        "QRCodeErrorCorrection": "H"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "ResultCode": 0,
+                "SaleToPOIResponse": {
+                    "MessageHeader": {
+                        "MessageCategory": "Display",
+                        "MessageClass": "Service",
+                        "MessageType": "Response",
+                        "POIID": "POITerm1",
+                        "ProtocolVersion": "3.1",
+                        "SaleID": "POS_ID_1234",
+                        "ServiceID": "Display-Simple-QR-002"
+                    },
+                    "DisplayResponse": {
+                        "Response": {
+                            "Result": "Success"
+                        },
+                        "OutputResult": [
                             {
                                 "Device": "POIDisplay",
                                 "Response": {
