@@ -34,6 +34,7 @@ We prepared example requests for the [Postman application](https://www.postman.c
 | 25.07.2025 | PO     | v3.2.40   | Added speech support |
 | 22.09.2025 | PO     | v3.2.40   | Added missing case in the mockup terminal behavior |
 | 22.10.2025 | VLMI   | v3.2.60   | New result code, cloud terminal status codes and new display request |
+| 27.01.2026 | PO     | v3.2.60   | Updated the mockup behavior |
 
 ## Overview
 
@@ -385,7 +386,8 @@ If the reqested amount is:
 - *greater than 408 and less than 409*: the result is a partial approval (only the half of the amount is approved, which should lead to an automatic reversal),
 - *greater than 409 and less than 410*: the terminal simulates "amount over the limit" status,
 - *greater or equal to 555 and less than 556*: result is `PLACE CALL`,
-- *greater or equal to 666 and less than 667*: result is `TECHNICAL REVERSAL FAIL`,
+- *greater or equal to 666 and less than 666.99*: result is `TECHNICAL REVERSAL FAIL`,
+- *greater or equal to 666.99*: result is `TECHNICALLY REVERSED` (i.e. transaction was sent to the acquirer and the terminal didn't receive answer in time or the answer was malformed -> the transaction was automatically reversed.),
 - *greater or equal to 777 and less than 778* and the PaymentType is `Completion`, the terminal simulates `PREAUTHORIZATION FULL` result,
 - *greater or equal to 888 and less than 889*: result is `NETWORK ERROR`,
 - *greater or equal to 999 and less than 1000*: the terminal simulates failed technical reversal (i.e. when the transaction is sent to the acquirer, the terminal doesn't receive the answer and the acquirer doesn't react to the automatic reversal),
